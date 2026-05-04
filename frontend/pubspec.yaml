@@ -31,6 +31,9 @@ dependencies:
   # Web DOM interop (for Mermaid.js rendering)
   web: ^1.1.0
 
+  # Client-side routing — enables /project/:id deep links
+  go_router: ^14.8.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

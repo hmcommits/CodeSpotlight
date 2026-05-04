@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import '../models/project_model.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/project_card.dart';
 import '../widgets/tech_filter_chips.dart';
 import 'add_project_sheet.dart';
-import 'project_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -152,21 +152,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openDetail(Project project) {
-    Navigator.of(context)
-        .push(
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => ProjectDetailPage(project: project),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(
-                opacity:
-                    CurvedAnimation(parent: animation, curve: Curves.easeOut),
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        )
-        .then((_) => _loadProjects()); // Refresh on return to pick up AI changes
+    context.go('/project/${project.id}', extra: project);
   }
 
   @override

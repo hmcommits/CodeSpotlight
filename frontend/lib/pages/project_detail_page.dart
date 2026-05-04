@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/project_model.dart';
 import '../services/api_service.dart';
@@ -112,8 +114,22 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             backgroundColor: AppTheme.background,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/');
+                }
+              },
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.share_outlined, size: 20),
+                tooltip: 'Copy link',
+                onPressed: () => _shareProject(context),
+              ),
+              const SizedBox(width: 4),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
                 tag: 'project-card-${_project.id}',
@@ -394,6 +410,36 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       return AiAnalysisFailed(onRetry: _reanalyze);
     }
     return AiAnalysisCard(aiSummary: _project.aiSummary);
+  }
+
+  void _shareProject(BuildContext context) {
+    // Build the shareable URL based on the current browser origin
+    final origin =
+        Uri.base.scheme == 'http' || Uri.base.scheme == 'https'
+            ? '${Uri.base.scheme}://${Uri.base.host}'
+                '${Uri.base.hasPort ? ':${Uri.base.port}' : ''}'
+            : 'https://codespotlight.web.app';
+    final url = '$origin/project/${_project.id}';
+    Clipboard.setData(ClipboardData(text: url));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(children: [
+          const Icon(Icons.check_circle_outline,
+              size: 16, color: Colors.white70),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Link copied: $url',
+                style: const TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis),
+          ),
+        ]),
+        backgroundColor: const Color(0xFF1E1E1E),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Future<void> _launch(String url) async {
