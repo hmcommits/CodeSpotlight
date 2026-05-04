@@ -48,3 +48,7 @@ logs/
 # ─── Misc ───────────────────────────────────────────────────
 *.pem
 .vercel
+
+# ─── Firebase / Agent SDK files ─────────────────────────────
+**/.agents/
+**/skills-lock.json
