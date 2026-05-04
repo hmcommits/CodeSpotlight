@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -16,16 +16,20 @@ import '../widgets/mermaid_diagram_view.dart';
 import '../widgets/video_player_view.dart';
 
 class ProjectDetailPage extends StatefulWidget {
-  final Project project;
+  final Project? project;     // passed when navigating from the list
+  final String? projectId;   // used for deep-link direct URL entry
 
-  const ProjectDetailPage({super.key, required this.project});
+  const ProjectDetailPage({super.key, this.project, this.projectId})
+      : assert(project != null || projectId != null,
+            'Provide either project or projectId');
 
   @override
   State<ProjectDetailPage> createState() => _ProjectDetailPageState();
 }
 
 class _ProjectDetailPageState extends State<ProjectDetailPage> {
-  late Project _project;
+  Project? _project;
+  bool _loadingProject = false;
   Timer? _pollTimer;
   List<List<int>> _commitData = [];
   bool _regenerating = false;
@@ -33,18 +37,32 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   @override
   void initState() {
     super.initState();
-    _project = widget.project;
-    // Start polling if AI is still pending
-    if (_project.aiStatus == 'pending') {
-      _startPolling();
+    if (widget.project != null) {
+      _project = widget.project;
+      if (_project!.aiStatus == 'pending') _startPolling();
+      _loadCommitActivity();
+    } else {
+      _fetchProject();
     }
-    // Load real commit data from GitHub (via backend proxy)
-    _loadCommitActivity();
+  }
+
+  Future<void> _fetchProject() async {
+    setState(() => _loadingProject = true);
+    try {
+      final p = await ApiService.getProjectById(widget.projectId!);
+      if (mounted) {
+        setState(() { _project = p; _loadingProject = false; });
+        if (p.aiStatus == 'pending') _startPolling();
+        _loadCommitActivity();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadingProject = false);
+    }
   }
 
   Future<void> _loadCommitActivity() async {
     try {
-      final data = await ApiService.getCommitActivity(_project.id);
+      final data = await ApiService.getCommitActivity(_project!.id);
       if (mounted && data.isNotEmpty) {
         setState(() => _commitData = data);
       } else if (mounted) {
@@ -64,13 +82,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   void _startPolling() {
     _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
       try {
-        final data = await ApiService.pollAiStatus(_project.id);
+        final data = await ApiService.pollAiStatus(_project!.id);
         final status = data['aiStatus'] as String? ?? 'pending';
         if (status != 'pending') {
           _pollTimer?.cancel();
           if (mounted) {
             setState(() {
-              _project = _project.copyWith(
+              _project = _project!.copyWith(
                 aiStatus: status,
                 aiSummary: data['aiSummary'] as String? ?? '',
                 mermaidDiagram: data['mermaidDiagram'] as String? ?? '',
@@ -79,16 +97,16 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           }
         }
       } catch (_) {
-        // Silently ignore poll errors — just keep trying
+        // Silently ignore poll errors â€” just keep trying
       }
     });
   }
 
   Future<void> _reanalyze() async {
     try {
-      await ApiService.reanalyze(_project.id);
+      await ApiService.reanalyze(_project!.id);
       setState(() {
-        _project = _project.copyWith(aiStatus: 'pending');
+        _project = _project!.copyWith(aiStatus: 'pending');
       });
       _startPolling();
     } catch (e) {
@@ -102,13 +120,22 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final langColor = AppTheme.languageColor(_project.primaryLanguage);
+    // Show loading spinner while fetching via deep link
+    if (_project == null) {
+      return const Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppTheme.primary),
+        ),
+      );
+    }
+    final langColor = AppTheme.languageColor(_project!.primaryLanguage);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: CustomScrollView(
         slivers: [
-          // ── App Bar ──────────────────────────────────────────────────────────
+          // â”€â”€ App Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           SliverAppBar(
             expandedHeight: 180,
             pinned: true,
@@ -133,7 +160,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
-                tag: 'project-card-${_project.id}',
+                tag: 'project-card-${_project!.id}',
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -163,26 +190,26 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _project.primaryLanguage,
+                                _project!.primaryLanguage,
                                 style: AppTheme.labelSmall.copyWith(
                                   color: langColor,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               const Spacer(),
-                              if (_project.liveUrl.isNotEmpty)
-                                HeartbeatBadge(status: _project.heartbeatStatus),
+                              if (_project!.liveUrl.isNotEmpty)
+                                HeartbeatBadge(status: _project!.heartbeatStatus),
                             ],
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            _project.repo,
+                            _project!.repo,
                             style: AppTheme.displayLarge,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            _project.owner,
+                            _project!.owner,
                             style: AppTheme.bodyMedium.copyWith(
                               color: AppTheme.primary.withValues(alpha: 0.9),
                             ),
@@ -196,7 +223,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             ),
           ),
 
-          // ── Content ──────────────────────────────────────────────────────────
+          // â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           SliverPadding(
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
@@ -208,21 +235,21 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     children: [
                       _Stat(
                         icon: Icons.star_rounded,
-                        label: '${_project.stars}',
+                        label: '${_project!.stars}',
                         subtitle: 'Stars',
                         color: AppTheme.warning,
                       ),
                       _VerticalDivider(),
                       _Stat(
                         icon: Icons.fork_right_rounded,
-                        label: '${_project.forks}',
+                        label: '${_project!.forks}',
                         subtitle: 'Forks',
                         color: AppTheme.textSecondary,
                       ),
                       _VerticalDivider(),
                       _Stat(
                         icon: Icons.code_rounded,
-                        label: _project.primaryLanguage,
+                        label: _project!.primaryLanguage,
                         subtitle: 'Language',
                         color: langColor,
                       ),
@@ -233,40 +260,40 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 const SizedBox(height: 16),
 
                 // Language bar
-                if (_project.languages.isNotEmpty) ...[
+                if (_project!.languages.isNotEmpty) ...[
                   _SectionLabel('Language Breakdown'),
                   _SectionCard(
-                    child: LanguageBar(languages: _project.languages),
+                    child: LanguageBar(languages: _project!.languages),
                   ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1),
                   const SizedBox(height: 16),
                 ],
 
                 // Description
-                if (_project.description.isNotEmpty) ...[
+                if (_project!.description.isNotEmpty) ...[
                   _SectionLabel('About'),
                   _SectionCard(
-                    child: Text(_project.description, style: AppTheme.bodyMedium),
+                    child: Text(_project!.description, style: AppTheme.bodyMedium),
                   ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
                   const SizedBox(height: 16),
                 ],
 
                 // Demo Video (YouTube / Loom / direct MP4)
-                if (_project.videoUrl.isNotEmpty) ...[
+                if (_project!.videoUrl.isNotEmpty) ...[
                   _SectionLabel('Demo Video'),
                   _SectionCard(
-                    child: VideoPlayerView(videoUrl: _project.videoUrl),
+                    child: VideoPlayerView(videoUrl: _project!.videoUrl),
                   ).animate().fadeIn(delay: 220.ms).slideY(begin: 0.1),
                   const SizedBox(height: 16),
                 ],
 
                 // Tech stack
-                if (_project.techStack.isNotEmpty) ...[
+                if (_project!.techStack.isNotEmpty) ...[
                   _SectionLabel('Tech Stack'),
                   _SectionCard(
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: _project.techStack.map((t) {
+                      children: _project!.techStack.map((t) {
                         return Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -288,18 +315,18 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   const SizedBox(height: 16),
                 ],
 
-                // AI Summary — live polling
+                // AI Summary â€” live polling
                 _SectionLabel('Technical Deep Dive'),
                 _SectionCard(
                   child: _buildAiSection(),
                 ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
                 const SizedBox(height: 16),
 
-                // Architecture Diagram — Mermaid.js
+                // Architecture Diagram â€” Mermaid.js
                 Row(
                   children: [
                     Expanded(child: _SectionLabel('Architecture Diagram')),
-                    if (_project.aiStatus == 'done')
+                    if (_project!.aiStatus == 'done')
                       TextButton.icon(
                         onPressed: _regenerating ? null : _regenDiagram,
                         icon: _regenerating
@@ -308,7 +335,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                                 child: CircularProgressIndicator(
                                     strokeWidth: 1.5, color: AppTheme.primary))
                             : const Icon(Icons.refresh, size: 14),
-                        label: Text(_regenerating ? 'Regenerating…' : 'Regenerate'),
+                        label: Text(_regenerating ? 'Regeneratingâ€¦' : 'Regenerate'),
                         style: TextButton.styleFrom(
                           foregroundColor: AppTheme.primary,
                           textStyle: const TextStyle(fontSize: 12),
@@ -319,13 +346,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   ],
                 ),
                 _SectionCard(
-                  child: _project.mermaidDiagram.isNotEmpty
-                      ? MermaidDiagramView(diagram: _project.mermaidDiagram)
+                  child: _project!.mermaidDiagram.isNotEmpty
+                      ? MermaidDiagramView(diagram: _project!.mermaidDiagram)
                       : Container(
                           height: 90,
                           alignment: Alignment.center,
                           child: Text(
-                            _project.aiStatus == 'pending'
+                            _project!.aiStatus == 'pending'
                                 ? 'Diagram will appear after AI analysis completes.'
                                 : 'No architecture diagram available.',
                             style: AppTheme.bodySmall,
@@ -337,8 +364,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 // Language Constellation
                 _SectionLabel('Language Constellation'),
                 _SectionCard(
-                  child: _project.languages.isNotEmpty
-                      ? LanguageConstellation(languages: _project.languages)
+                  child: _project!.languages.isNotEmpty
+                      ? LanguageConstellation(languages: _project!.languages)
                       : Center(
                           child: Text('No language data.',
                               style: AppTheme.bodySmall),
@@ -346,7 +373,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 ).animate().fadeIn(delay: 380.ms).slideY(begin: 0.1),
                 const SizedBox(height: 16),
 
-                // Commit Heatmap — Proof of Effort
+                // Commit Heatmap â€” Proof of Effort
                 _SectionLabel('Proof of Effort'),
                 _SectionCard(
                   child: Column(
@@ -356,7 +383,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         Icon(Icons.local_fire_department_rounded,
                             size: 14, color: AppTheme.primary),
                         const SizedBox(width: 5),
-                        Text('Commit Activity — past 12 months',
+                        Text('Commit Activity â€” past 12 months',
                             style: AppTheme.labelSmall
                                 .copyWith(color: AppTheme.primary)),
                       ]),
@@ -366,7 +393,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                             ? _commitData
                             : generateDemoHeatmapData(),
                         accentColor: AppTheme.languageColor(
-                            _project.primaryLanguage),
+                            _project!.primaryLanguage),
                       ),
                     ],
                   ),
@@ -379,7 +406,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _launch(
-                          'https://github.com/${_project.fullName}',
+                          'https://github.com/${_project!.fullName}',
                         ),
                         icon: const Icon(Icons.open_in_new, size: 16),
                         label: const Text('View on GitHub'),
@@ -390,11 +417,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         ),
                       ),
                     ),
-                    if (_project.liveUrl.isNotEmpty) ...[
+                    if (_project!.liveUrl.isNotEmpty) ...[
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _launch(_project.liveUrl),
+                          onPressed: () => _launch(_project!.liveUrl),
                           icon: const Icon(Icons.rocket_launch_rounded,
                               size: 16),
                           label: const Text('Visit Live Site'),
@@ -413,13 +440,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }
 
   Widget _buildAiSection() {
-    if (_project.aiStatus == 'pending') {
+    if (_project!.aiStatus == 'pending') {
       return const AiAnalysisPending();
     }
-    if (_project.aiStatus == 'failed' || _project.aiSummary.isEmpty) {
+    if (_project!.aiStatus == 'failed' || _project!.aiSummary.isEmpty) {
       return AiAnalysisFailed(onRetry: _reanalyze);
     }
-    return AiAnalysisCard(aiSummary: _project.aiSummary);
+    return AiAnalysisCard(aiSummary: _project!.aiSummary);
   }
 
   void _shareProject(BuildContext context) {
@@ -429,7 +456,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             ? '${Uri.base.scheme}://${Uri.base.host}'
                 '${Uri.base.hasPort ? ':${Uri.base.port}' : ''}'
             : 'https://codespotlight.web.app';
-    final url = '$origin/project/${_project.id}';
+    final url = '$origin/project/${_project!.id}';
     Clipboard.setData(ClipboardData(text: url));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -464,13 +491,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     if (_regenerating) return;
     setState(() => _regenerating = true);
     try {
-      await ApiService.reanalyze(_project.id);
+      await ApiService.reanalyze(_project!.id);
       // Poll until aiStatus != 'pending'
       for (var i = 0; i < 30; i++) {
         await Future.delayed(const Duration(seconds: 4));
-        final status = await ApiService.pollAiStatus(_project.id);
+        final status = await ApiService.pollAiStatus(_project!.id);
         if (status['aiStatus'] != 'pending') {
-          final updated = _project.copyWith(
+          final updated = _project!.copyWith(
             aiStatus: status['aiStatus'] as String?,
             aiSummary: status['aiSummary'] as String?,
             mermaidDiagram: status['mermaidDiagram'] as String?,
@@ -484,7 +511,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }
 }
 
-// ── Helper widgets ────────────────────────────────────────────────────────────
+// â”€â”€ Helper widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _SectionLabel extends StatelessWidget {
   final String label;
@@ -552,4 +579,5 @@ class _VerticalDivider extends StatelessWidget {
     return Container(width: 1, height: 40, color: AppTheme.border);
   }
 }
+
 

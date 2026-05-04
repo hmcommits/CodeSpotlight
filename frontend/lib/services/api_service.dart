@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/project_model.dart';
+import 'auth_service.dart';
 
 class ApiService {
-  // TODO: Replace with your deployed backend URL before Firebase deploy
   static const String baseUrl = String.fromEnvironment(
     'BACKEND_URL',
     defaultValue: 'http://localhost:3000/api',
@@ -11,139 +11,98 @@ class ApiService {
 
   static const Duration _timeout = Duration(seconds: 20);
 
-  static Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+  /// Auth + demo headers injected automatically from AuthService
+  static Map<String, String> get _headers => AuthService.instance.headers;
 
   // ── GET /api/projects ───────────────────────────────────────────────────────
   static Future<List<Project>> getProjects({
-    String? stack,
-    String? language,
-    String? search,
+    String? stack, String? language, String? search,
   }) async {
     final params = <String, String>{};
-    if (stack != null && stack.isNotEmpty) params['stack'] = stack;
+    if (stack != null && stack.isNotEmpty)    params['stack']    = stack;
     if (language != null && language.isNotEmpty) params['language'] = language;
-    if (search != null && search.isNotEmpty) params['search'] = search;
+    if (search != null && search.isNotEmpty)  params['search']   = search;
 
     final uri = Uri.parse('$baseUrl/projects').replace(queryParameters: params);
+    final res = await http.get(uri, headers: _headers).timeout(_timeout);
 
-    final response = await http
-        .get(uri, headers: _headers)
-        .timeout(_timeout);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
       final list = data['projects'] as List<dynamic>;
       return list.map((e) => Project.fromJson(e as Map<String, dynamic>)).toList();
-    } else {
-      final err = jsonDecode(response.body);
-      throw Exception(err['error'] ?? 'Failed to load projects');
     }
+    throw Exception((jsonDecode(res.body) as Map)['error'] ?? 'Failed to load projects');
   }
 
   // ── POST /api/projects ──────────────────────────────────────────────────────
   static Future<Project> submitProject(
-    String githubUrl, {
-    String liveUrl = '',
-    String videoUrl = '',
-  }) async {
-    final uri = Uri.parse('$baseUrl/projects');
-    final response = await http
-        .post(
-          uri,
-          headers: _headers,
-          body: jsonEncode({
-            'githubUrl': githubUrl,
-            'liveUrl': liveUrl,
-            'videoUrl': videoUrl,
-          }),
-        )
-        .timeout(_timeout);
+    String githubUrl, {String liveUrl = '', String videoUrl = ''}) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/projects'),
+      headers: _headers,
+      body: jsonEncode({'githubUrl': githubUrl, 'liveUrl': liveUrl, 'videoUrl': videoUrl}),
+    ).timeout(_timeout);
 
-    if (response.statusCode == 200 || response.statusCode == 202) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (res.statusCode == 200 || res.statusCode == 202) {
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
       return Project.fromJson(data['project'] as Map<String, dynamic>);
-    } else {
-      final err = jsonDecode(response.body);
-      throw Exception(err['error'] ?? 'Failed to submit project');
     }
+    throw Exception((jsonDecode(res.body) as Map)['error'] ?? 'Failed to submit project');
   }
 
   // ── GET /api/projects/:id ───────────────────────────────────────────────────
   static Future<Project> getProjectById(String id) async {
-    final uri = Uri.parse('$baseUrl/projects/$id');
-    final response = await http
-        .get(uri, headers: _headers)
-        .timeout(_timeout);
+    final res = await http.get(
+      Uri.parse('$baseUrl/projects/$id'), headers: _headers,
+    ).timeout(_timeout);
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return Project.fromJson(data['project'] as Map<String, dynamic>);
-    } else {
-      throw Exception('Project not found');
+    if (res.statusCode == 200) {
+      return Project.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
     }
+    throw Exception('Project not found');
+  }
+
+  // ── GET /api/projects/:id/poll ──────────────────────────────────────────────
+  static Future<Map<String, dynamic>> pollAiStatus(String id) async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/projects/$id/poll'), headers: _headers,
+    ).timeout(_timeout);
+    if (res.statusCode == 200) return jsonDecode(res.body) as Map<String, dynamic>;
+    throw Exception('Failed to poll AI status');
   }
 
   // ── POST /api/projects/:id/heartbeat ────────────────────────────────────────
   static Future<String> checkHeartbeat(String id, String liveUrl) async {
-    final uri = Uri.parse('$baseUrl/projects/$id/heartbeat');
-    final response = await http
-        .post(
-          uri,
-          headers: _headers,
-          body: jsonEncode({'liveUrl': liveUrl}),
-        )
-        .timeout(const Duration(seconds: 15));
+    final res = await http.post(
+      Uri.parse('$baseUrl/projects/$id/heartbeat'),
+      headers: _headers,
+      body: jsonEncode({'liveUrl': liveUrl}),
+    ).timeout(const Duration(seconds: 15));
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return data['status'] as String? ?? 'unknown';
+    if (res.statusCode == 200) {
+      return (jsonDecode(res.body) as Map)['status'] as String? ?? 'unknown';
     }
     return 'unknown';
   }
 
-  // ── GET /api/health ─────────────────────────────────────────────────────────
-  static Future<bool> checkHealth() async {
-    try {
-      final uri = Uri.parse('$baseUrl/health');
-      final response = await http.get(uri).timeout(const Duration(seconds: 5));
-      return response.statusCode == 200;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  // ── GET /api/projects/:id/ai-status ─────────────────────────────────────────
-  // Poll this every N seconds while aiStatus == 'pending'
-  static Future<Map<String, dynamic>> pollAiStatus(String id) async {
-    final uri = Uri.parse('$baseUrl/projects/$id/ai-status');
-    final response = await http.get(uri, headers: _headers).timeout(_timeout);
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    }
-    throw Exception('Failed to poll AI status');
-  }
-
   // ── POST /api/projects/:id/reanalyze ────────────────────────────────────────
   static Future<void> reanalyze(String id) async {
-    final uri = Uri.parse('$baseUrl/projects/$id/reanalyze');
-    await http.post(uri, headers: _headers).timeout(_timeout);
+    await http.post(
+      Uri.parse('$baseUrl/projects/$id/reanalyze'),
+      headers: _headers,
+    ).timeout(_timeout);
   }
 
   // ── GET /api/projects/:id/commit-activity ────────────────────────────────────
-  // Returns 52 weeks × 7 days of commit counts from GitHub stats API.
-  // GitHub may return 202 (computing) — returns empty list in that case.
   static Future<List<List<int>>> getCommitActivity(String id) async {
     try {
-      final uri = Uri.parse('$baseUrl/projects/$id/commit-activity');
-      final response = await http.get(uri, headers: _headers).timeout(_timeout);
+      final res = await http.get(
+        Uri.parse('$baseUrl/projects/$id/commit-activity'),
+        headers: _headers,
+      ).timeout(_timeout);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final rawList = data['commitActivity'] as List<dynamic>? ?? [];
-        // Each entry: { week: timestamp, days: [0..6], total: n }
+      if (res.statusCode == 200) {
+        final rawList = jsonDecode(res.body) as List<dynamic>;
         return rawList.map<List<int>>((week) {
           final days = week['days'] as List<dynamic>? ?? [];
           return days.map<int>((d) => (d as num).toInt()).toList();
@@ -151,5 +110,15 @@ class ApiService {
       }
     } catch (_) {}
     return [];
+  }
+
+  // ── GET /api/health ─────────────────────────────────────────────────────────
+  static Future<bool> checkHealth() async {
+    try {
+      final res = await http
+          .get(Uri.parse('$baseUrl/health'))
+          .timeout(const Duration(seconds: 5));
+      return res.statusCode == 200;
+    } catch (_) { return false; }
   }
 }

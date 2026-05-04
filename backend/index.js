@@ -4,7 +4,8 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 
 const projectRoutes = require('./src/routes/projects');
-const errorHandler = require('./src/middleware/errorHandler');
+const authRoutes    = require('./src/routes/auth');
+const errorHandler  = require('./src/middleware/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,7 +16,7 @@ app.use(
   cors({
     origin: process.env.ALLOWED_ORIGIN || '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Demo-Session'],
   })
 );
 
@@ -25,6 +26,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
+app.use('/api/auth',     authRoutes);
 app.use('/api/projects', projectRoutes);
 
 // ─── 404 handler ────────────────────────────────────────────────────────────

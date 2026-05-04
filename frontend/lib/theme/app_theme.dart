@@ -5,22 +5,23 @@ class AppTheme {
   AppTheme._();
 
   // ── Colors ──────────────────────────────────────────────────────────────────
-  static const Color background = Color(0xFF0D0D0D);
-  static const Color surface = Color(0xFF1A1A1A);
-  static const Color surfaceLight = Color(0xFF242424);
-  static const Color border = Color(0xFF2A2A2A);
+  static const Color background  = Color(0xFF080810);
+  static const Color surface     = Color(0xFF12121E);
+  static const Color surfaceHigh = Color(0xFF1A1A2E);
+  static const Color surfaceLight = Color(0xFF222236);
+  static const Color border      = Color(0xFF2A2A3A);
 
-  static const Color primary = Color(0xFF6C63FF); // electric violet
-  static const Color secondary = Color(0xFF00D9FF); // cyan
-  static const Color accent = Color(0xFFFF6584); // coral
+  static const Color primary   = Color(0xFF6C63FF);
+  static const Color secondary = Color(0xFF00D9FF);
+  static const Color accent    = Color(0xFFFF6B6B);
 
-  static const Color textPrimary = Color(0xFFF0F0F0);
-  static const Color textSecondary = Color(0xFF8A8A8A);
-  static const Color textMuted = Color(0xFF555555);
+  static const Color textPrimary   = Color(0xFFF0F0F5);
+  static const Color textSecondary = Color(0xFF8A8A9A);
+  static const Color textMuted     = Color(0xFF4A4A5A);
 
-  static const Color success = Color(0xFF00E676);
-  static const Color error = Color(0xFFFF5252);
-  static const Color warning = Color(0xFFFFD740);
+  static const Color success = Color(0xFF4ADE80);
+  static const Color error   = Color(0xFFFF6B6B);
+  static const Color warning = Color(0xFFFFB84C);
 
   // ── Language Colors ──────────────────────────────────────────────────────────
   static const Map<String, Color> languageColors = {
