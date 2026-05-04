@@ -29,11 +29,9 @@ class _ProjectCardState extends State<ProjectCard> {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: widget.onTap,
-        child: AnimatedContainer(
+        child: AnimatedScale(
+          scale: _hovered ? 1.025 : 1.0,
           duration: const Duration(milliseconds: 200),
-          transform: Matrix4.identity()
-            ..scale(_hovered ? 1.025 : 1.0),
-          transformAlignment: Alignment.center,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppTheme.radiusCard),
             child: BackdropFilter(
@@ -41,30 +39,30 @@ class _ProjectCardState extends State<ProjectCard> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: AppTheme.surface.withOpacity(0.85),
+                  color: AppTheme.surface.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(AppTheme.radiusCard),
                   border: Border(
                     left: BorderSide(color: langColor, width: 3),
                     top: BorderSide(
                       color: _hovered
-                          ? langColor.withOpacity(0.4)
+                          ? langColor.withValues(alpha: 0.4)
                           : AppTheme.border,
                     ),
                     right: BorderSide(
                       color: _hovered
-                          ? langColor.withOpacity(0.2)
+                          ? langColor.withValues(alpha: 0.2)
                           : AppTheme.border,
                     ),
                     bottom: BorderSide(
                       color: _hovered
-                          ? langColor.withOpacity(0.2)
+                          ? langColor.withValues(alpha: 0.2)
                           : AppTheme.border,
                     ),
                   ),
                   boxShadow: _hovered
                       ? [
                           BoxShadow(
-                            color: langColor.withOpacity(0.18),
+                            color: langColor.withValues(alpha: 0.18),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
@@ -75,10 +73,9 @@ class _ProjectCardState extends State<ProjectCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Header row ────────────────────────────────────────────
+                    // ── Header row ──────────────────────────────────────────
                     Row(
                       children: [
-                        // Language dot
                         Container(
                           width: 10,
                           height: 10,
@@ -106,12 +103,12 @@ class _ProjectCardState extends State<ProjectCard> {
                     Text(
                       widget.project.owner,
                       style: AppTheme.bodySmall.copyWith(
-                        color: AppTheme.primary.withOpacity(0.8),
+                        color: AppTheme.primary.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(height: 10),
 
-                    // ── Description ───────────────────────────────────────────
+                    // ── Description ─────────────────────────────────────────
                     Text(
                       widget.project.description.isNotEmpty
                           ? widget.project.description
@@ -122,11 +119,11 @@ class _ProjectCardState extends State<ProjectCard> {
                     ),
                     const SizedBox(height: 14),
 
-                    // ── Language bar ──────────────────────────────────────────
+                    // ── Language bar ─────────────────────────────────────────
                     LanguageBar(languages: widget.project.languages),
                     const SizedBox(height: 14),
 
-                    // ── Footer: stats + tech stack ────────────────────────────
+                    // ── Footer ───────────────────────────────────────────────
                     Row(
                       children: [
                         _StatChip(
@@ -141,9 +138,7 @@ class _ProjectCardState extends State<ProjectCard> {
                           color: AppTheme.textSecondary,
                         ),
                         const Spacer(),
-                        // AI badge
-                        if (widget.project.aiStatus == 'done')
-                          _AiBadge(),
+                        if (widget.project.aiStatus == 'done') const _AiBadge(),
                       ],
                     ),
                     if (widget.project.techStack.isNotEmpty) ...[
@@ -158,11 +153,11 @@ class _ProjectCardState extends State<ProjectCard> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.primary.withOpacity(0.12),
+                              color: AppTheme.primary.withValues(alpha: 0.12),
                               borderRadius:
                                   BorderRadius.circular(AppTheme.radiusSmall),
                               border: Border.all(
-                                color: AppTheme.primary.withOpacity(0.25),
+                                color: AppTheme.primary.withValues(alpha: 0.25),
                               ),
                             ),
                             child: Text(t, style: AppTheme.labelSmall),
@@ -191,7 +186,11 @@ class _StatChip extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatChip({required this.icon, required this.label, required this.color});
+  const _StatChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -207,6 +206,8 @@ class _StatChip extends StatelessWidget {
 }
 
 class _AiBadge extends StatelessWidget {
+  const _AiBadge();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -227,7 +228,7 @@ class _AiBadge extends StatelessWidget {
   }
 }
 
-// ── Loading shimmer placeholder ───────────────────────────────────────────────
+// ── Shimmer loading placeholder ───────────────────────────────────────────────
 class LoadingBentoCard extends StatelessWidget {
   const LoadingBentoCard({super.key});
 
@@ -243,15 +244,15 @@ class LoadingBentoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _shimmer(height: 14, width: 120),
+          _shimmerBox(height: 14, width: 120),
           const SizedBox(height: 10),
-          _shimmer(height: 10, width: 200),
+          _shimmerBox(height: 10, width: 200),
           const SizedBox(height: 6),
-          _shimmer(height: 10, width: 160),
+          _shimmerBox(height: 10, width: 160),
           const SizedBox(height: 16),
-          _shimmer(height: 6, width: double.infinity),
+          _shimmerBox(height: 6, width: double.infinity),
           const SizedBox(height: 12),
-          _shimmer(height: 10, width: 80),
+          _shimmerBox(height: 10, width: 80),
         ],
       ),
     )
@@ -259,7 +260,7 @@ class LoadingBentoCard extends StatelessWidget {
         .shimmer(duration: 1200.ms, color: AppTheme.surfaceLight);
   }
 
-  Widget _shimmer({required double height, required double width}) {
+  Widget _shimmerBox({required double height, required double width}) {
     return Container(
       height: height,
       width: width,
