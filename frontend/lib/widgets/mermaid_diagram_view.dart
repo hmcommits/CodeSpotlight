@@ -1,5 +1,6 @@
-// Web-only widget — renders Mermaid diagrams inside an iframe (most reliable approach)
-import 'dart:async';
+// Web-only widget — renders Mermaid diagrams inside an iframe.
+// The iframe strips fixed SVG dimensions and reports its natural height
+// back to Flutter via postMessage so the container auto-sizes with no scroll.
 import 'dart:js_interop';
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
@@ -7,9 +8,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:web/web.dart' as web;
 import '../theme/app_theme.dart';
 
-/// Renders a Mermaid.js architecture diagram inside an iframe platform view.
-/// The iframe posts `{type:"mermaid-ok"}` or `{type:"mermaid-error"}` back
-/// to the parent so Flutter can switch to the text fallback on syntax errors.
 class MermaidDiagramView extends StatefulWidget {
   final String diagram;
   const MermaidDiagramView({super.key, required this.diagram});
@@ -21,44 +19,49 @@ class MermaidDiagramView extends StatefulWidget {
 class _MermaidDiagramViewState extends State<MermaidDiagramView> {
   static int _counter = 0;
   late final String _viewId;
+
   bool _registered = false;
   bool _renderFailed = false;
+  // Height reported by the iframe after SVG render; default 280 until known
+  double _iframeHeight = 280;
 
-  JSFunction? _messageHandler;
+  JSFunction? _msgHandler;
 
   @override
   void initState() {
     super.initState();
     _viewId = 'mermaid-frame-${++_counter}';
+    _listenMessages();
     _registerView();
-    _listenForIframeMessages();
   }
 
   @override
   void dispose() {
-    // Remove the message event listener
-    if (_messageHandler != null) {
-      web.window.removeEventListener('message', _messageHandler!);
+    if (_msgHandler != null) {
+      web.window.removeEventListener('message', _msgHandler!);
     }
     super.dispose();
   }
 
-  /// Listens for postMessage from the iframe:
-  ///   { type: "mermaid-ok" }    → diagram rendered fine
-  ///   { type: "mermaid-error" } → syntax error, show fallback
-  void _listenForIframeMessages() {
-    _messageHandler = (web.MessageEvent event) {
+  // Listen for { type: 'mermaid-ok', height: N } or { type: 'mermaid-error' }
+  void _listenMessages() {
+    _msgHandler = (web.MessageEvent event) {
       try {
         final data = event.data.dartify();
-        if (data is Map) {
-          final type = data['type'] as String?;
-          if (type == 'mermaid-error' && mounted) {
-            setState(() => _renderFailed = true);
-          }
+        if (data is! Map) return;
+        final type = data['type'] as String?;
+        if (type == 'mermaid-ok' && mounted) {
+          final h = data['height'];
+          final reportedH = h is num ? h.toDouble() : _iframeHeight;
+          // Clamp: min 150, max 520
+          final clamped = reportedH.clamp(150.0, 520.0);
+          setState(() => _iframeHeight = clamped);
+        } else if (type == 'mermaid-error' && mounted) {
+          setState(() => _renderFailed = true);
         }
       } catch (_) {}
     }.toJS;
-    web.window.addEventListener('message', _messageHandler!);
+    web.window.addEventListener('message', _msgHandler!);
   }
 
   void _registerView() {
@@ -69,24 +72,23 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
       iframe.style.height = '100%';
       iframe.style.border = '0';
       iframe.style.background = '#0F0F0F';
+      // data: URL — works without a server, offline, in dev & prod
       final html = Uri.encodeComponent(_buildHtml(widget.diagram));
       iframe.src = 'data:text/html;charset=utf-8,$html';
 
-      ui_web.platformViewRegistry.registerViewFactory(
-        _viewId,
-        (_) => iframe,
-      );
+      ui_web.platformViewRegistry.registerViewFactory(_viewId, (_) => iframe);
       setState(() => _registered = true);
     } catch (e) {
-      debugPrint('Mermaid iframe registration error: $e');
+      debugPrint('Mermaid iframe error: $e');
     }
   }
 
-  /// Builds a self-contained HTML page that:
-  /// 1. Renders the Mermaid diagram
-  /// 2. Posts {type:"mermaid-error"} to parent if Mermaid throws
+  /// Self-contained HTML that:
+  /// 1. Renders Mermaid via mermaid.render() (no startOnLoad glitches)
+  /// 2. Strips fixed SVG width/height → scales to 100% width, auto height
+  /// 3. Posts natural content height back to Flutter via postMessage
+  /// 4. Posts mermaid-error on parse failure
   String _buildHtml(String diagram) {
-    // Escape diagram for safe embedding inside a JS template literal
     final safe = diagram
         .replaceAll('\\', '\\\\')
         .replaceAll('`', '\\`')
@@ -97,85 +99,99 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
 <head>
   <meta charset="UTF-8">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: #0F0F0F;
-      padding: 16px;
-      font-family: Inter, sans-serif;
-      overflow: auto;
-      min-height: 100vh;
-    }
-    .mermaid { max-width: 100%; }
-    svg {
-      max-width: 100% !important;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #0F0F0F; overflow: hidden; }
+    body { padding: 16px; font-family: Inter, sans-serif; }
+
+    /* Make SVG fill its container and scale proportionally */
+    #out svg {
+      display: block !important;
+      width: 100% !important;
       height: auto !important;
-      display: block;
-      margin: 0 auto;
+      max-width: 100% !important;
     }
-    .node rect, .node circle, .node ellipse, .node polygon {
+    /* Dark theme node overrides */
+    .node rect, .node circle, .node ellipse,
+    .node polygon, .node path {
       fill: #1A1A1A !important;
       stroke: #6C63FF !important;
     }
-    .edgeLabel { background: #1A1A1A !important; }
+    .edgePath path { stroke: #6C63FF !important; }
+    .edgeLabel  { background: #1A1A1A !important; color: #F0F0F0; }
     .cluster rect { fill: #252525 !important; stroke: #6C63FF !important; }
-    #error-msg {
-      display: none;
-      color: #8A8A8A;
-      font-size: 11px;
-      padding: 12px;
-      font-family: monospace;
-      white-space: pre-wrap;
-      word-break: break-word;
+    .label { color: #F0F0F0 !important; }
+
+    /* Error / fallback pre */
+    #err {
+      display: none; color: #8A8A8A;
+      font: 11px/1.7 monospace;
+      white-space: pre-wrap; word-break: break-word;
     }
   </style>
 </head>
 <body>
-  <pre class="mermaid" id="diagram"></pre>
-  <div id="error-msg"></div>
+  <div id="out"></div>
+  <pre id="err"></pre>
+
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>
-    const diagram = `$safe`;
+    const DIAGRAM = \`$safe\`;
 
     mermaid.initialize({
       startOnLoad: false,
       theme: 'dark',
       fontFamily: 'Inter, sans-serif',
       suppressErrorRendering: true,
-      flowchart: { curve: 'basis', useMaxWidth: true },
+      flowchart: { curve: 'basis', useMaxWidth: true, htmlLabels: true },
       themeVariables: {
-        background: '#0F0F0F',
-        mainBkg: '#1A1A1A',
-        primaryColor: '#1A1A1A',
-        primaryTextColor: '#F0F0F0',
-        primaryBorderColor: '#6C63FF',
-        lineColor: '#6C63FF',
-        secondaryColor: '#252525',
-        tertiaryColor: '#2A2A2A',
-        edgeLabelBackground: '#1A1A1A',
-        nodeBorder: '#6C63FF',
+        background:           '#0F0F0F',
+        mainBkg:              '#1A1A1A',
+        primaryColor:         '#1A1A1A',
+        primaryTextColor:     '#F0F0F0',
+        primaryBorderColor:   '#6C63FF',
+        lineColor:            '#6C63FF',
+        secondaryColor:       '#252525',
+        tertiaryColor:        '#2A2A2A',
+        edgeLabelBackground:  '#1A1A1A',
+        nodeBorder:           '#6C63FF',
       }
     });
 
-    async function render() {
+    async function go() {
       try {
-        const { svg } = await mermaid.render('mermaid-svg', diagram);
-        const el = document.getElementById('diagram');
-        if (el) el.innerHTML = svg;
-        window.parent.postMessage({ type: 'mermaid-ok' }, '*');
-      } catch (err) {
-        console.error('Mermaid parse error:', err);
-        // Show raw diagram text as fallback inside iframe
-        const errEl = document.getElementById('error-msg');
-        if (errEl) {
-          errEl.style.display = 'block';
-          errEl.textContent = diagram;
+        const { svg } = await mermaid.render('mg', DIAGRAM);
+        const out = document.getElementById('out');
+        out.innerHTML = svg;
+
+        // ── Strip fixed pixel dimensions so CSS can control scaling ──
+        const svgEl = out.querySelector('svg');
+        if (svgEl) {
+          // Preserve intrinsic ratio via viewBox
+          const nw = parseFloat(svgEl.getAttribute('width'))  || 800;
+          const nh = parseFloat(svgEl.getAttribute('height')) || 400;
+          if (!svgEl.getAttribute('viewBox')) {
+            svgEl.setAttribute('viewBox', '0 0 ' + nw + ' ' + nh);
+          }
+          svgEl.removeAttribute('width');
+          svgEl.removeAttribute('height');
+          svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         }
-        // Tell Flutter to switch to Flutter-side fallback
-        window.parent.postMessage({ type: 'mermaid-error', message: err.message }, '*');
+
+        // Measure total rendered height after layout
+        requestAnimationFrame(() => {
+          const h = document.body.scrollHeight;
+          window.parent.postMessage({ type: 'mermaid-ok', height: h }, '*');
+        });
+      } catch (err) {
+        console.error('Mermaid error:', err.message || err);
+        const errEl = document.getElementById('err');
+        errEl.style.display = 'block';
+        errEl.textContent = DIAGRAM;
+        window.parent.postMessage({ type: 'mermaid-error', message: String(err) }, '*');
       }
     }
 
-    render();
+    go();
   </script>
 </body>
 </html>''';
@@ -183,21 +199,23 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
 
   @override
   Widget build(BuildContext context) {
-    // If iframe reported a parse error, show Flutter fallback immediately
     if (_renderFailed) {
       return MermaidFallbackView(diagram: widget.diagram);
-    }
-
-    if (!_registered) {
-      return _loadingBox('Preparing diagram…');
     }
 
     if (widget.diagram.trim().isEmpty) {
       return _emptyBox();
     }
 
-    return Container(
-      height: 320,
+    if (!_registered) {
+      return _loadingBox();
+    }
+
+    // AnimatedContainer smoothly grows from 280 to the reported natural height
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOut,
+      height: _iframeHeight,
       decoration: BoxDecoration(
         color: const Color(0xFF0F0F0F),
         borderRadius: BorderRadius.circular(AppTheme.radiusChip),
@@ -208,45 +226,42 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
     ).animate().fadeIn(duration: 500.ms);
   }
 
-  Widget _loadingBox(String msg) {
-    return Container(
-      height: 100,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F0F0F),
-        borderRadius: BorderRadius.circular(AppTheme.radiusChip),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(
-            width: 14, height: 14,
-            child: CircularProgressIndicator(strokeWidth: 1.5, color: AppTheme.primary),
-          ),
-          const SizedBox(width: 10),
-          Text(msg, style: AppTheme.bodySmall),
-        ],
-      ),
-    );
-  }
+  Widget _loadingBox() => Container(
+        height: 90,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F0F0F),
+          borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 14, height: 14,
+              child: CircularProgressIndicator(
+                  strokeWidth: 1.5, color: AppTheme.primary),
+            ),
+            const SizedBox(width: 10),
+            Text('Rendering diagram…', style: AppTheme.bodySmall),
+          ],
+        ),
+      );
 
-  Widget _emptyBox() {
-    return Container(
-      height: 90,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F0F0F),
-        borderRadius: BorderRadius.circular(AppTheme.radiusChip),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Text('No architecture diagram available.', style: AppTheme.bodySmall),
-    );
-  }
+  Widget _emptyBox() => Container(
+        height: 80,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F0F0F),
+          borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: Text('No architecture diagram available.', style: AppTheme.bodySmall),
+      );
 }
 
-/// Flutter-side fallback: shows the raw Mermaid source in a styled monospace box.
-/// Displayed when the iframe reports a parse error via postMessage.
+/// Fallback: shown when the iframe reports a Mermaid parse error.
+/// Shows the raw diagram source in readable monospace.
 class MermaidFallbackView extends StatelessWidget {
   final String diagram;
   const MermaidFallbackView({super.key, required this.diagram});
@@ -267,7 +282,7 @@ class MermaidFallbackView extends StatelessWidget {
             Icon(Icons.account_tree_outlined, size: 13, color: AppTheme.textMuted),
             const SizedBox(width: 6),
             Text(
-              'Architecture (Mermaid source — render failed)',
+              'Architecture (source — render failed)',
               style: AppTheme.labelSmall.copyWith(color: AppTheme.textMuted),
             ),
           ]),

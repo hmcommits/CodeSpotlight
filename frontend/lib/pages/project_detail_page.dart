@@ -25,6 +25,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   late Project _project;
   Timer? _pollTimer;
   List<List<int>> _commitData = [];
+  bool _regenerating = false;
 
   @override
   void initState() {
@@ -269,7 +270,28 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 const SizedBox(height: 16),
 
                 // Architecture Diagram — Mermaid.js
-                _SectionLabel('Architecture Diagram'),
+                Row(
+                  children: [
+                    Expanded(child: _SectionLabel('Architecture Diagram')),
+                    if (_project.aiStatus == 'done')
+                      TextButton.icon(
+                        onPressed: _regenerating ? null : _regenDiagram,
+                        icon: _regenerating
+                            ? const SizedBox(
+                                width: 12, height: 12,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 1.5, color: AppTheme.primary))
+                            : const Icon(Icons.refresh, size: 14),
+                        label: Text(_regenerating ? 'Regenerating…' : 'Regenerate'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppTheme.primary,
+                          textStyle: const TextStyle(fontSize: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                        ),
+                      ),
+                  ],
+                ),
                 _SectionCard(
                   child: _project.mermaidDiagram.isNotEmpty
                       ? MermaidDiagramView(diagram: _project.mermaidDiagram)
@@ -379,6 +401,30 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     if (uri != null && await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  /// Triggers a full re-analysis (new Gemini call) and polls until done.
+  Future<void> _regenDiagram() async {
+    if (_regenerating) return;
+    setState(() => _regenerating = true);
+    try {
+      await ApiService.reanalyze(_project.id);
+      // Poll until aiStatus != 'pending'
+      for (var i = 0; i < 30; i++) {
+        await Future.delayed(const Duration(seconds: 4));
+        final status = await ApiService.pollAiStatus(_project.id);
+        if (status['aiStatus'] != 'pending') {
+          final updated = _project.copyWith(
+            aiStatus: status['aiStatus'] as String?,
+            aiSummary: status['aiSummary'] as String?,
+            mermaidDiagram: status['mermaidDiagram'] as String?,
+          );
+          if (mounted) setState(() => _project = updated);
+          break;
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _regenerating = false);
   }
 }
 

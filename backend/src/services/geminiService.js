@@ -11,36 +11,59 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function sanitizeMermaid(raw) {
   if (!raw || typeof raw !== 'string') return '';
 
-  let diagram = raw.trim();
+  let d = raw.trim();
 
-  // Ensure it starts with graph TD (or graph LR)
-  if (!diagram.match(/^graph\s+(TD|LR|TB|BT|RL)/i)) {
-    diagram = 'graph TD\n' + diagram;
+  // Remove markdown code fence wrappers
+  d = d.replace(/^```(?:mermaid)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+  // Ensure starts with graph TD
+  if (!d.match(/^graph\s+(TD|LR|TB|BT|RL)/i)) {
+    d = 'graph TD\n' + d;
   }
 
-  // Fix: parentheses in NODE DEFINITIONS like  A(Label) → A["Label"]
-  // But keep --> arrows and subgraph intact
-  diagram = diagram.replace(
-    /^(\s*\w[\w\s]*)\(([^)]+)\)/gm,
-    (match, id, label) => {
-      // Skip if it looks like a flowchart shape like A((circle)) or A{rhombus}
-      return `${id}["${label.replace(/"/g, "'")}"]`;
-    }
-  );
+  // Fix old-style single arrow: -> becomes -->
+  d = d.replace(/->/g, '-->');
 
-  // Fix: double-parentheses (circle nodes) — convert to stadium shape []
-  diagram = diagram.replace(/\(\(([^)]+)\)\)/g, '["$1"]');
+  // Fix: Node --> [Label] NextNode --> merge to Node -->|"Label"| NextNode
+  // Pattern: --> [some label] NodeId
+  d = d.replace(/-->\s*\[([^\]]+)\]\s+(\w+)/g, (_, label, nodeId) => {
+    const cleanLabel = label.trim().replace(/"/g, "'");
+    return `-->|"${cleanLabel}"| ${nodeId}`;
+  });
 
-  // Fix: curly brace decision nodes with special chars — quote the label
-  diagram = diagram.replace(/\{([^}]*[/()\s][^}]*)\}/g, '{"$1"}');
+  // Fix: NodeId(Label) at start of a line (node definition, not arrow target)
+  // Converts: User(Patient / Guardian) → User["Patient / Guardian"]
+  // Only if NOT followed immediately by [ (that would be Node(subgraph style) which is different)
+  d = d.replace(/^(\s*)(\w+)\(([^)]+)\)(?!\s*-->)/gm, (match, indent, id, label) => {
+    const cleanLabel = label.trim().replace(/"/g, "'");
+    return `${indent}${id}["${cleanLabel}"]`;
+  });
 
-  // Remove any backtick-fenced block wrapping
-  diagram = diagram.replace(/^```(?:mermaid)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  // Fix: double parens ((circle)) → ["label"]
+  d = d.replace(/\(\(([^)]+)\)\)/g, '["$1"]');
+
+  // Fix: curly brace nodes with slashes or parens inside → quote the label
+  d = d.replace(/\{([^}]*[/()\s][^}]*)\}/g, (_, inner) => {
+    return `{"${inner.replace(/"/g, "'")}"}`;
+  });
+
+  // Fix: parentheses INSIDE square bracket labels are fine for Mermaid v11,
+  // but some versions choke on them. Replace with spaces.
+  // e.g. [Mobile Application (React Native)] → [Mobile Application React Native]
+  d = d.replace(/\[([^\]]*)\(([^)]*)\)([^\]]*)\]/g, (_, pre, inner, post) => {
+    return `["${pre}${inner}${post}".trim()]`;
+  });
+  // Simpler cleanup: remove parens inside [] labels
+  d = d.replace(/\[([^\]]+)\]/g, (match, inner) => {
+    if (inner.startsWith('"') || inner.startsWith("'")) return match; // already quoted
+    const cleaned = inner.replace(/[()]/g, '');
+    return `["${cleaned.replace(/"/g, "'")}"]`;
+  });
 
   // Collapse excessive blank lines
-  diagram = diagram.replace(/\n{3,}/g, '\n\n');
+  d = d.replace(/\n{3,}/g, '\n\n');
 
-  return diagram;
+  return d.trim();
 }
 
 function buildPrompt(repoContext) {
