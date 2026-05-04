@@ -6,8 +6,11 @@ import '../models/project_model.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ai_analysis_card.dart';
+import '../widgets/commit_heatmap.dart';
 import '../widgets/heartbeat_badge.dart';
 import '../widgets/language_bar.dart';
+import '../widgets/language_constellation.dart';
+import '../widgets/mermaid_diagram_view.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final Project project;
@@ -246,37 +249,57 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
                 const SizedBox(height: 16),
 
-                // Mermaid placeholder (Phase 2)
+                // Architecture Diagram — Mermaid.js
                 _SectionLabel('Architecture Diagram'),
                 _SectionCard(
-                  child: Container(
-                    height: 100,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.account_tree_outlined,
-                            color: AppTheme.textMuted, size: 28),
-                        const SizedBox(height: 6),
-                        Text('Mermaid diagram — Phase 2',
-                            style: AppTheme.bodySmall),
-                      ],
-                    ),
-                  ),
+                  child: _project.mermaidDiagram.isNotEmpty
+                      ? MermaidDiagramView(diagram: _project.mermaidDiagram)
+                      : Container(
+                          height: 90,
+                          alignment: Alignment.center,
+                          child: Text(
+                            _project.aiStatus == 'pending'
+                                ? 'Diagram will appear after AI analysis completes.'
+                                : 'No architecture diagram available.',
+                            style: AppTheme.bodySmall,
+                          ),
+                        ),
                 ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.1),
                 const SizedBox(height: 16),
 
-                // Proof of Effort placeholder (Phase 2)
+                // Language Constellation
+                _SectionLabel('Language Constellation'),
+                _SectionCard(
+                  child: _project.languages.isNotEmpty
+                      ? LanguageConstellation(languages: _project.languages)
+                      : Center(
+                          child: Text('No language data.',
+                              style: AppTheme.bodySmall),
+                        ),
+                ).animate().fadeIn(delay: 380.ms).slideY(begin: 0.1),
+                const SizedBox(height: 16),
+
+                // Commit Heatmap — Proof of Effort
                 _SectionLabel('Proof of Effort'),
                 _SectionCard(
-                  child: Container(
-                    height: 70,
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Commit heatmap & language constellation — Phase 2',
-                      style: AppTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Icon(Icons.local_fire_department_rounded,
+                            size: 14, color: AppTheme.primary),
+                        const SizedBox(width: 5),
+                        Text('Commit Activity — past 12 months',
+                            style: AppTheme.labelSmall
+                                .copyWith(color: AppTheme.primary)),
+                      ]),
+                      const SizedBox(height: 12),
+                      CommitHeatmap(
+                        weeklyData: generateDemoHeatmapData(),
+                        accentColor: AppTheme.languageColor(
+                            _project.primaryLanguage),
+                      ),
+                    ],
                   ),
                 ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
                 const SizedBox(height: 24),
