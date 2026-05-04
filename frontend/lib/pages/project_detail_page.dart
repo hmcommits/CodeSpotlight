@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/project_model.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/ai_analysis_card.dart';
 import '../widgets/heartbeat_badge.dart';
 import '../widgets/language_bar.dart';
 
@@ -241,10 +242,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 // AI Summary — live polling
                 _SectionLabel('Technical Deep Dive'),
                 _SectionCard(
-                  child: _AISummarySection(
-                    project: _project,
-                    onReanalyze: _reanalyze,
-                  ),
+                  child: _buildAiSection(),
                 ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
                 const SizedBox(height: 16),
 
@@ -320,6 +318,16 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildAiSection() {
+    if (_project.aiStatus == 'pending') {
+      return const AiAnalysisPending();
+    }
+    if (_project.aiStatus == 'failed' || _project.aiSummary.isEmpty) {
+      return AiAnalysisFailed(onRetry: _reanalyze);
+    }
+    return AiAnalysisCard(aiSummary: _project.aiSummary);
   }
 
   Future<void> _launch(String url) async {
@@ -399,91 +407,3 @@ class _VerticalDivider extends StatelessWidget {
   }
 }
 
-class _AISummarySection extends StatelessWidget {
-  final Project project;
-  final VoidCallback onReanalyze;
-
-  const _AISummarySection({
-    required this.project,
-    required this.onReanalyze,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (project.aiStatus == 'pending') {
-      return Row(
-        children: [
-          const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppTheme.primary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Gemini is analyzing this repository… checking every 4s',
-              style: AppTheme.bodyMedium,
-            ),
-          ),
-        ],
-      );
-    }
-
-    if (project.aiStatus == 'failed' || project.aiSummary.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.warning_amber_rounded,
-                  color: AppTheme.warning, size: 16),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'AI analysis failed. You can retry below.',
-                  style: AppTheme.bodyMedium,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: onReanalyze,
-            icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Retry AI Analysis'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.primary,
-              side: const BorderSide(color: AppTheme.primary),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            ShaderMask(
-              shaderCallback: (bounds) =>
-                  AppTheme.primaryGradient.createShader(bounds),
-              child: const Icon(Icons.auto_awesome,
-                  size: 16, color: Colors.white),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'AI-Generated Analysis · gemini-2.5-flash',
-              style: AppTheme.labelSmall.copyWith(color: AppTheme.primary),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text(project.aiSummary, style: AppTheme.bodyMedium),
-      ],
-    );
-  }
-}
