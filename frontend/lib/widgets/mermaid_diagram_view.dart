@@ -1,6 +1,6 @@
 // Web-only widget — renders Mermaid diagrams inside an iframe.
-// The iframe strips fixed SVG dimensions and reports its natural height
-// back to Flutter via postMessage so the container auto-sizes with no scroll.
+// Uses srcdoc (not data: URL) for CSP compatibility in production (Firebase Hosting).
+// The iframe renders the SVG scaled to fit width; container is scrollable vertically.
 import 'dart:js_interop';
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
@@ -22,8 +22,6 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
 
   bool _registered = false;
   bool _renderFailed = false;
-  // Height reported by the iframe after SVG render; default 280 until known
-  double _iframeHeight = 280;
 
   JSFunction? _msgHandler;
 
@@ -43,20 +41,13 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
     super.dispose();
   }
 
-  // Listen for { type: 'mermaid-ok', height: N } or { type: 'mermaid-error' }
   void _listenMessages() {
     _msgHandler = (web.MessageEvent event) {
       try {
         final data = event.data.dartify();
         if (data is! Map) return;
         final type = data['type'] as String?;
-        if (type == 'mermaid-ok' && mounted) {
-          final h = data['height'];
-          final reportedH = h is num ? h.toDouble() : _iframeHeight;
-          // Clamp: min 150, max 520
-          final clamped = reportedH.clamp(150.0, 520.0);
-          setState(() => _iframeHeight = clamped);
-        } else if (type == 'mermaid-error' && mounted) {
+        if (type == 'mermaid-error' && mounted) {
           setState(() => _renderFailed = true);
         }
       } catch (_) {}
@@ -65,6 +56,7 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
   }
 
   void _registerView() {
+    if (widget.diagram.trim().isEmpty) return;
     try {
       final iframe =
           web.document.createElement('iframe') as web.HTMLIFrameElement;
@@ -72,9 +64,11 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
       iframe.style.height = '100%';
       iframe.style.border = '0';
       iframe.style.background = '#0F0F0F';
-      // data: URL — works without a server, offline, in dev & prod
-      final html = Uri.encodeComponent(_buildHtml(widget.diagram));
-      iframe.src = 'data:text/html;charset=utf-8,$html';
+
+      // ── Use srcdoc instead of data: URL ──────────────────────────────────
+      // data: URLs are blocked by Firebase Hosting's Content-Security-Policy.
+      // srcdoc is CSP-safe and works in all modern browsers.
+      (iframe as dynamic).srcdoc = _buildHtml(widget.diagram);
 
       ui_web.platformViewRegistry.registerViewFactory(_viewId, (_) => iframe);
       setState(() => _registered = true);
@@ -83,12 +77,13 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
     }
   }
 
-  /// Self-contained HTML that:
-  /// 1. Renders Mermaid via mermaid.render() (no startOnLoad glitches)
-  /// 2. Strips fixed SVG width/height → scales to 100% width, auto height
-  /// 3. Posts natural content height back to Flutter via postMessage
-  /// 4. Posts mermaid-error on parse failure
+  /// Builds the inline HTML page.
+  /// The SVG is rendered at full width with height:auto so the aspect ratio
+  /// is preserved. The body has overflow:auto so the user can scroll vertically
+  /// if the diagram is tall. A fixed 400px container in Flutter clips the view
+  /// and lets the iframe's internal scroll handle the rest.
   String _buildHtml(String diagram) {
+    // Escape for safe embedding inside a JS template literal
     final safe = diagram
         .replaceAll('\\', '\\\\')
         .replaceAll('`', '\\`')
@@ -98,34 +93,39 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { background: #0F0F0F; overflow: hidden; }
-    body { padding: 16px; font-family: Inter, sans-serif; }
-
-    /* Make SVG fill its container and scale proportionally */
+    html { background: #0F0F0F; height: 100%; }
+    body {
+      background: #0F0F0F;
+      padding: 16px;
+      font-family: Inter, sans-serif;
+      /* Allow vertical scroll inside iframe */
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 100%;
+    }
     #out svg {
       display: block !important;
       width: 100% !important;
       height: auto !important;
       max-width: 100% !important;
     }
-    /* Dark theme node overrides */
     .node rect, .node circle, .node ellipse,
     .node polygon, .node path {
       fill: #1A1A1A !important;
       stroke: #6C63FF !important;
     }
     .edgePath path { stroke: #6C63FF !important; }
-    .edgeLabel  { background: #1A1A1A !important; color: #F0F0F0; }
+    .edgeLabel { background: #1A1A1A !important; color: #F0F0F0; }
     .cluster rect { fill: #252525 !important; stroke: #6C63FF !important; }
-    .label { color: #F0F0F0 !important; }
-
-    /* Error / fallback pre */
+    .label, .nodeLabel { color: #F0F0F0 !important; }
     #err {
       display: none; color: #8A8A8A;
       font: 11px/1.7 monospace;
       white-space: pre-wrap; word-break: break-word;
+      padding: 8px;
     }
   </style>
 </head>
@@ -163,10 +163,9 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
         const out = document.getElementById('out');
         out.innerHTML = svg;
 
-        // ── Strip fixed pixel dimensions so CSS can control scaling ──
+        // Strip fixed pixel dimensions — let CSS width:100%/height:auto handle scaling
         const svgEl = out.querySelector('svg');
         if (svgEl) {
-          // Preserve intrinsic ratio via viewBox
           const nw = parseFloat(svgEl.getAttribute('width'))  || 800;
           const nh = parseFloat(svgEl.getAttribute('height')) || 400;
           if (!svgEl.getAttribute('viewBox')) {
@@ -177,16 +176,11 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
           svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         }
 
-        // Measure total rendered height after layout
-        requestAnimationFrame(() => {
-          const h = document.body.scrollHeight;
-          window.parent.postMessage({ type: 'mermaid-ok', height: h }, '*');
-        });
+        window.parent.postMessage({ type: 'mermaid-ok' }, '*');
       } catch (err) {
-        console.error('Mermaid error:', err.message || err);
-        const errEl = document.getElementById('err');
-        errEl.style.display = 'block';
-        errEl.textContent = DIAGRAM;
+        console.error('Mermaid error:', err);
+        document.getElementById('err').style.display = 'block';
+        document.getElementById('err').textContent = DIAGRAM;
         window.parent.postMessage({ type: 'mermaid-error', message: String(err) }, '*');
       }
     }
@@ -211,11 +205,10 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
       return _loadingBox();
     }
 
-    // AnimatedContainer smoothly grows from 280 to the reported natural height
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOut,
-      height: _iframeHeight,
+    // Fixed 400px container — iframe scrolls internally if the diagram is tall.
+    // This ensures the diagram always fits in the page without overflowing Flutter layout.
+    return Container(
+      height: 400,
       decoration: BoxDecoration(
         color: const Color(0xFF0F0F0F),
         borderRadius: BorderRadius.circular(AppTheme.radiusChip),
@@ -260,8 +253,7 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
       );
 }
 
-/// Fallback: shown when the iframe reports a Mermaid parse error.
-/// Shows the raw diagram source in readable monospace.
+/// Shown when the iframe reports a Mermaid parse error.
 class MermaidFallbackView extends StatelessWidget {
   final String diagram;
   const MermaidFallbackView({super.key, required this.diagram});

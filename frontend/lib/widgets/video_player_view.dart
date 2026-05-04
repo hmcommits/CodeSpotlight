@@ -1,10 +1,10 @@
-// VideoPlayerView — renders YouTube/Loom/direct video links in an iframe.
-// For YouTube: converts watch URLs to embed URLs and uses nocookie domain.
-// For Loom:    uses Loom's embed endpoint.
-// For direct:  wraps in an HTML5 <video> element.
-// Falls back to an "Open Video" button if format is unrecognised.
+// VideoPlayerView — embeds YouTube, Loom, or direct video files.
+// Uses srcdoc (not data: URL) for CSP compatibility on Firebase Hosting.
+// YouTube error 153 = video restricted from embedding → shows "Watch on YouTube" button.
+import 'dart:js_interop';
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:web/web.dart' as web;
 import '../theme/app_theme.dart';
 
@@ -20,87 +20,112 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
   static int _counter = 0;
   late final String _viewId;
   bool _registered = false;
+  bool _embedError = false;   // YouTube error 153 or similar
+
+  JSFunction? _msgHandler;
 
   @override
   void initState() {
     super.initState();
     _viewId = 'video-frame-${++_counter}';
+    _listenMessages();
     _registerView();
   }
 
-  /// Detects URL type and builds the appropriate embed HTML.
-  static String? _embedUrl(String raw) {
-    final uri = Uri.tryParse(raw.trim());
-    if (uri == null) return null;
-
-    // ── YouTube ──────────────────────────────────────────────────────────
-    if (uri.host.contains('youtube.com') || uri.host.contains('youtu.be')) {
-      String? videoId;
-      if (uri.host.contains('youtu.be')) {
-        videoId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
-      } else {
-        videoId = uri.queryParameters['v'];
-      }
-      if (videoId != null) {
-        return 'https://www.youtube-nocookie.com/embed/$videoId'
-            '?rel=0&modestbranding=1&color=white';
-      }
+  @override
+  void dispose() {
+    if (_msgHandler != null) {
+      web.window.removeEventListener('message', _msgHandler!);
     }
+    super.dispose();
+  }
 
-    // ── Loom ─────────────────────────────────────────────────────────────
-    if (uri.host.contains('loom.com')) {
-      final parts = uri.pathSegments;
-      final shareIdx = parts.indexOf('share');
-      if (shareIdx >= 0 && shareIdx + 1 < parts.length) {
-        final id = parts[shareIdx + 1];
-        return 'https://www.loom.com/embed/$id?hide_owner=true&hide_share=true';
-      }
+  void _listenMessages() {
+    _msgHandler = (web.MessageEvent event) {
+      try {
+        final data = event.data.dartify();
+        if (data is Map && data['type'] == 'video-error' && mounted) {
+          setState(() => _embedError = true);
+        }
+      } catch (_) {}
+    }.toJS;
+    web.window.addEventListener('message', _msgHandler!);
+  }
+
+  /// Convert YouTube watch URLs to nocookie embed URLs.
+  static String? _youtubeEmbedUrl(Uri uri) {
+    if (!uri.host.contains('youtube') && !uri.host.contains('youtu.be')) {
+      return null;
     }
+    String? videoId;
+    if (uri.host.contains('youtu.be')) {
+      videoId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+    } else {
+      videoId = uri.queryParameters['v'];
+    }
+    if (videoId == null) return null;
+    return 'https://www.youtube-nocookie.com/embed/$videoId'
+        '?rel=0&modestbranding=1';
+  }
 
-    return null; // not a recognised embed-able URL
+  static String? _loomEmbedUrl(Uri uri) {
+    if (!uri.host.contains('loom.com')) return null;
+    final shareIdx = uri.pathSegments.indexOf('share');
+    if (shareIdx < 0 || shareIdx + 1 >= uri.pathSegments.length) return null;
+    return 'https://www.loom.com/embed/${uri.pathSegments[shareIdx + 1]}'
+        '?hide_owner=true&hide_share=true';
   }
 
   static bool _isDirectVideo(String url) =>
-      url.endsWith('.mp4') ||
-      url.endsWith('.webm') ||
-      url.endsWith('.ogg');
+      url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg');
 
-  String _buildHtml() {
-    final embed = _embedUrl(widget.videoUrl);
+  void _registerView() {
+    final uri = Uri.tryParse(widget.videoUrl.trim());
+    if (uri == null) return;
 
-    if (embed != null) {
-      // Iframe embed (YouTube / Loom)
-      return '''<!DOCTYPE html><html><head><meta charset="UTF-8">
+    final embedUrl = _youtubeEmbedUrl(uri) ?? _loomEmbedUrl(uri);
+
+    String html;
+    if (embedUrl != null) {
+      // iframe embed — with error detection for restricted videos (error 153)
+      html = '''<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { background:#000; width:100%; height:100%; }
+  html, body { background:#000; width:100%; height:100%; overflow:hidden; }
   iframe { width:100%; height:100%; border:none; display:block; }
 </style></head><body>
-<iframe src="${embed}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
+<iframe id="vid" src="$embedUrl"
+  allowfullscreen
+  allow="autoplay; encrypted-media; picture-in-picture"
+></iframe>
+<script>
+  // YouTube fires an onError event we can't directly intercept for embeds,
+  // but we can detect the yt-player-error event via the iframe's postMessage.
+  window.addEventListener('message', function(e) {
+    try {
+      var d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      // YouTube sends {event:"infoDelivery", info:{errorCode:150}} or 153
+      if (d && d.event === 'infoDelivery' && d.info && d.info.errorCode) {
+        window.parent.postMessage({ type: 'video-error', code: d.info.errorCode }, '*');
+      }
+    } catch(_) {}
+  });
+</script>
 </body></html>''';
-    }
-
-    if (_isDirectVideo(widget.videoUrl)) {
-      return '''<!DOCTYPE html><html><head><meta charset="UTF-8">
+    } else if (_isDirectVideo(widget.videoUrl)) {
+      html = '''<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { background:#000; width:100%; height:100%; }
+  html, body { background:#000; width:100%; height:100%; overflow:hidden; }
   video { width:100%; height:100%; object-fit:contain; display:block; }
 </style></head><body>
 <video controls autoplay muted loop src="${widget.videoUrl}"></video>
 </body></html>''';
-    }
-
-    // Unrecognised — empty HTML (we fall back to button in Flutter)
-    return '';
-  }
-
-  void _registerView() {
-    final html = _buildHtml();
-    if (html.isEmpty) {
-      setState(() => _registered = false);
+    } else {
+      // Unknown URL type — don't register, fall through to button
       return;
     }
+
     try {
       final iframe =
           web.document.createElement('iframe') as web.HTMLIFrameElement;
@@ -108,7 +133,8 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
       iframe.style.height = '100%';
       iframe.style.border = '0';
       iframe.style.background = '#000';
-      iframe.src = 'data:text/html;charset=utf-8,${Uri.encodeComponent(html)}';
+      // Use srcdoc — CSP safe (no data: URL)
+      (iframe as dynamic).srcdoc = html;
       ui_web.platformViewRegistry.registerViewFactory(_viewId, (_) => iframe);
       setState(() => _registered = true);
     } catch (e) {
@@ -116,37 +142,58 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
     }
   }
 
+  Future<void> _openExternal() async {
+    final uri = Uri.tryParse(widget.videoUrl);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // If URL is not embeddable, show an "Open Video" button
-    if (!_registered) {
+    // Restricted/unembeddable video — show an "Open" button
+    if (_embedError || !_registered) {
       return Container(
-        height: 56,
+        height: 64,
         decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusChip),
           border: Border.all(color: AppTheme.border),
         ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.radiusChip),
-          onTap: () {},
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.play_circle_outline,
-                  size: 18, color: AppTheme.primary),
-              const SizedBox(width: 8),
-              Text('Watch Demo Video',
-                  style: AppTheme.bodyMedium
-                      .copyWith(color: AppTheme.primary)),
-            ],
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+            onTap: _openExternal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.play_circle_outline,
+                    size: 20, color: AppTheme.primary),
+                const SizedBox(width: 10),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Watch Demo Video',
+                        style: AppTheme.bodyMedium
+                            .copyWith(color: AppTheme.textPrimary)),
+                    if (_embedError)
+                      Text('(cannot embed — click to open)',
+                          style: AppTheme.bodySmall.copyWith(
+                              color: AppTheme.textMuted, fontSize: 10)),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.open_in_new, size: 14, color: AppTheme.textMuted),
+              ],
+            ),
           ),
         ),
       );
     }
 
     return Container(
-      // 16:9 aspect ratio container
       height: 240,
       decoration: BoxDecoration(
         color: Colors.black,
