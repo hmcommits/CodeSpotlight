@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/project_model.dart';
@@ -32,142 +31,168 @@ class _ProjectCardState extends State<ProjectCard> {
         child: AnimatedScale(
           scale: _hovered ? 1.025 : 1.0,
           duration: const Duration(milliseconds: 200),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-                  border: Border(
-                    left: BorderSide(color: langColor, width: 3),
-                    top: BorderSide(
-                      color: _hovered
-                          ? langColor.withValues(alpha: 0.4)
-                          : AppTheme.border,
-                    ),
-                    right: BorderSide(
-                      color: _hovered
-                          ? langColor.withValues(alpha: 0.2)
-                          : AppTheme.border,
-                    ),
-                    bottom: BorderSide(
-                      color: _hovered
-                          ? langColor.withValues(alpha: 0.2)
-                          : AppTheme.border,
-                    ),
-                  ),
-                  boxShadow: _hovered
-                      ? [
-                          BoxShadow(
-                            color: langColor.withValues(alpha: 0.18),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ]
-                      : [],
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              // Solid surface — no BackdropFilter needed on dark bg
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+              border: Border(
+                left: BorderSide(color: langColor, width: 3),
+                top: BorderSide(
+                  color: _hovered
+                      ? langColor.withValues(alpha: 0.35)
+                      : AppTheme.border,
+                  width: 1,
                 ),
-                padding: const EdgeInsets.all(18),
-                child: Column(
+                right: BorderSide(
+                  color: _hovered
+                      ? langColor.withValues(alpha: 0.15)
+                      : AppTheme.border,
+                  width: 1,
+                ),
+                bottom: BorderSide(
+                  color: _hovered
+                      ? langColor.withValues(alpha: 0.15)
+                      : AppTheme.border,
+                  width: 1,
+                ),
+              ),
+              boxShadow: _hovered
+                  ? [
+                      BoxShadow(
+                        color: langColor.withValues(alpha: 0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                        spreadRadius: -2,
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Header ────────────────────────────────────────────────────
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Header row ──────────────────────────────────────────
-                    Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: langColor,
-                            shape: BoxShape.circle,
-                          ),
+                    // Language dot
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: langColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: langColor.withValues(alpha: 0.5),
+                              blurRadius: 6,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             widget.project.repo,
                             style: AppTheme.titleMedium,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        if (widget.project.liveUrl.isNotEmpty)
-                          HeartbeatBadge(
-                            status: widget.project.heartbeatStatus,
+                          Text(
+                            widget.project.owner,
+                            style: AppTheme.bodySmall.copyWith(
+                              color: AppTheme.primary.withValues(alpha: 0.8),
+                            ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.project.owner,
-                      style: AppTheme.bodySmall.copyWith(
-                        color: AppTheme.primary.withValues(alpha: 0.8),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-
-                    // ── Description ─────────────────────────────────────────
-                    Text(
-                      widget.project.description.isNotEmpty
-                          ? widget.project.description
-                          : 'No description available.',
-                      style: AppTheme.bodyMedium,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 14),
-
-                    // ── Language bar ─────────────────────────────────────────
-                    LanguageBar(languages: widget.project.languages),
-                    const SizedBox(height: 14),
-
-                    // ── Footer ───────────────────────────────────────────────
-                    Row(
-                      children: [
-                        _StatChip(
-                          icon: Icons.star_rounded,
-                          label: _formatNum(widget.project.stars),
-                          color: AppTheme.warning,
+                    if (widget.project.liveUrl.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: HeartbeatBadge(
+                          status: widget.project.heartbeatStatus,
                         ),
-                        const SizedBox(width: 8),
-                        _StatChip(
-                          icon: Icons.fork_right_rounded,
-                          label: _formatNum(widget.project.forks),
-                          color: AppTheme.textSecondary,
-                        ),
-                        const Spacer(),
-                        if (widget.project.aiStatus == 'done') const _AiBadge(),
-                      ],
-                    ),
-                    if (widget.project.techStack.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: widget.project.techStack.take(3).map((t) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withValues(alpha: 0.12),
-                              borderRadius:
-                                  BorderRadius.circular(AppTheme.radiusSmall),
-                              border: Border.all(
-                                color: AppTheme.primary.withValues(alpha: 0.25),
-                              ),
-                            ),
-                            child: Text(t, style: AppTheme.labelSmall),
-                          );
-                        }).toList(),
                       ),
-                    ],
                   ],
                 ),
-              ),
+                const SizedBox(height: 10),
+
+                // ── Description ───────────────────────────────────────────────
+                Text(
+                  widget.project.description.isNotEmpty
+                      ? widget.project.description
+                      : 'No description available.',
+                  style: AppTheme.bodyMedium,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+
+                // ── Language bar ──────────────────────────────────────────────
+                if (widget.project.languages.isNotEmpty)
+                  LanguageBar(languages: widget.project.languages),
+
+                const Spacer(),
+
+                // ── Footer ────────────────────────────────────────────────────
+                Row(
+                  children: [
+                    _StatChip(
+                      icon: Icons.star_rounded,
+                      label: _formatNum(widget.project.stars),
+                      color: AppTheme.warning,
+                    ),
+                    const SizedBox(width: 10),
+                    _StatChip(
+                      icon: Icons.fork_right_rounded,
+                      label: _formatNum(widget.project.forks),
+                      color: AppTheme.textSecondary,
+                    ),
+                    const Spacer(),
+                    _StatusBadge(aiStatus: widget.project.aiStatus),
+                  ],
+                ),
+
+                // ── Tech stack chips ──────────────────────────────────────────
+                if (widget.project.techStack.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 5,
+                    runSpacing: 4,
+                    children: widget.project.techStack.take(3).map((t) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.1),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusSmall),
+                          border: Border.all(
+                            color: AppTheme.primary.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Text(t, style: AppTheme.labelSmall),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
@@ -181,6 +206,7 @@ class _ProjectCardState extends State<ProjectCard> {
   }
 }
 
+// ── Stat chip ─────────────────────────────────────────────────────────────────
 class _StatChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -197,7 +223,7 @@ class _StatChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: color),
+        Icon(icon, size: 13, color: color),
         const SizedBox(width: 3),
         Text(label, style: AppTheme.labelSmall.copyWith(color: color)),
       ],
@@ -205,26 +231,60 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-class _AiBadge extends StatelessWidget {
-  const _AiBadge();
+// ── AI / pending status badge ─────────────────────────────────────────────────
+class _StatusBadge extends StatelessWidget {
+  final String aiStatus;
+  const _StatusBadge({required this.aiStatus});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
-        borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-      ),
-      child: Row(
+    if (aiStatus == 'done') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
+          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.auto_awesome, size: 9, color: Colors.white),
+            const SizedBox(width: 3),
+            Text('AI', style: AppTheme.labelSmall.copyWith(color: Colors.white)),
+          ],
+        ),
+      );
+    }
+
+    if (aiStatus == 'pending') {
+      return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.auto_awesome, size: 10, color: Colors.white),
-          const SizedBox(width: 3),
-          Text('AI', style: AppTheme.labelSmall.copyWith(color: Colors.white)),
+          SizedBox(
+            width: 10,
+            height: 10,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.5,
+              color: AppTheme.primary.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'Analyzing',
+            style: AppTheme.labelSmall.copyWith(
+              color: AppTheme.primary.withValues(alpha: 0.7),
+            ),
+          ),
         ],
-      ),
-    );
+      ).animate(onPlay: (c) => c.repeat()).shimmer(
+            duration: 1500.ms,
+            color: AppTheme.primary.withValues(alpha: 0.3),
+          );
+    }
+
+    // failed
+    return const Icon(Icons.warning_amber_rounded,
+        size: 14, color: AppTheme.warning);
   }
 }
 
@@ -240,19 +300,21 @@ class LoadingBentoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.radiusCard),
         border: Border.all(color: AppTheme.border),
       ),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _shimmerBox(height: 14, width: 120),
-          const SizedBox(height: 10),
-          _shimmerBox(height: 10, width: 200),
+          _shimmerBox(height: 14, width: 130),
           const SizedBox(height: 6),
-          _shimmerBox(height: 10, width: 160),
-          const SizedBox(height: 16),
-          _shimmerBox(height: 6, width: double.infinity),
-          const SizedBox(height: 12),
           _shimmerBox(height: 10, width: 80),
+          const SizedBox(height: 12),
+          _shimmerBox(height: 10, width: double.infinity),
+          const SizedBox(height: 5),
+          _shimmerBox(height: 10, width: 200),
+          const SizedBox(height: 14),
+          _shimmerBox(height: 6, width: double.infinity),
+          const Spacer(),
+          _shimmerBox(height: 10, width: 100),
         ],
       ),
     )

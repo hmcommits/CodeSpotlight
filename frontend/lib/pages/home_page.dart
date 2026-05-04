@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/project_model.dart';
@@ -24,6 +25,9 @@ class _HomePageState extends State<HomePage> {
   String _searchQuery = '';
   final _searchController = TextEditingController();
 
+  // Polls every 5s for any cards still showing aiStatus == 'pending'
+  Timer? _pendingPollTimer;
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +37,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _pendingPollTimer?.cancel();
     super.dispose();
   }
 
@@ -48,12 +53,58 @@ class _HomePageState extends State<HomePage> {
         _applyFilters();
         _loading = false;
       });
+      _schedulePendingPoll();
     } catch (e) {
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');
         _loading = false;
       });
     }
+  }
+
+  /// Start a timer if any projects are still pending AI analysis.
+  void _schedulePendingPoll() {
+    _pendingPollTimer?.cancel();
+    final hasPending = _projects.any((p) => p.aiStatus == 'pending');
+    if (!hasPending) return;
+
+    _pendingPollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      final pending = _projects.where((p) => p.aiStatus == 'pending').toList();
+      if (pending.isEmpty) {
+        _pendingPollTimer?.cancel();
+        return;
+      }
+
+      bool anyUpdated = false;
+      for (final p in pending) {
+        try {
+          final data = await ApiService.pollAiStatus(p.id);
+          final newStatus = data['aiStatus'] as String? ?? 'pending';
+          if (newStatus != 'pending') {
+            final idx = _projects.indexWhere((x) => x.id == p.id);
+            if (idx != -1) {
+              _projects[idx] = _projects[idx].copyWith(
+                aiStatus: newStatus,
+                aiSummary: data['aiSummary'] as String? ?? '',
+                mermaidDiagram: data['mermaidDiagram'] as String? ?? '',
+              );
+              anyUpdated = true;
+            }
+          }
+        } catch (_) {
+          // ignore poll errors
+        }
+      }
+
+      if (anyUpdated && mounted) {
+        setState(() => _applyFilters());
+      }
+
+      // Stop timer if no more pending
+      if (_projects.every((p) => p.aiStatus != 'pending')) {
+        _pendingPollTimer?.cancel();
+      }
+    });
   }
 
   void _applyFilters() {
@@ -90,28 +141,32 @@ class _HomePageState extends State<HomePage> {
       builder: (_) => AddProjectSheet(
         onProjectAdded: (project) {
           setState(() {
-            // Add to top; backend will fill AI data async
             _projects.insert(0, project);
             _applyFilters();
           });
+          // Immediately start polling for the new project
+          _schedulePendingPoll();
         },
       ),
     );
   }
 
   void _openDetail(Project project) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (_, _, _) => ProjectDetailPage(project: project),
-        transitionsBuilder: (_, animation, _, child) {
-          return FadeTransition(
-            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
-    );
+    Navigator.of(context)
+        .push(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => ProjectDetailPage(project: project),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(
+                opacity:
+                    CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 300),
+          ),
+        )
+        .then((_) => _loadProjects()); // Refresh on return to pick up AI changes
   }
 
   @override
@@ -124,7 +179,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: AppTheme.surface,
         child: CustomScrollView(
           slivers: [
-            // ── App Bar ────────────────────────────────────────────────────────
+            // ── App Bar ──────────────────────────────────────────────────────
             SliverAppBar(
               pinned: true,
               floating: true,
@@ -161,13 +216,11 @@ class _HomePageState extends State<HomePage> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: _onSearch,
-                    style: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.textPrimary,
-                    ),
+                    style:
+                        AppTheme.bodyMedium.copyWith(color: AppTheme.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Search repos, owners, descriptions...',
-                      prefixIcon:
-                          const Icon(Icons.search_rounded, size: 18),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 18),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 16),
@@ -183,7 +236,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // ── Filter Chips ───────────────────────────────────────────────────
+            // ── Filter Chips ─────────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -194,22 +247,26 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // ── Content ────────────────────────────────────────────────────────
+            // ── Content ──────────────────────────────────────────────────────
             if (_loading)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverGrid(
                   delegate: SliverChildBuilderDelegate(
-                    (_, _) => const LoadingBentoCard(),
+                    (_, __) => const LoadingBentoCard(),
                     childCount: 6,
                   ),
                   gridDelegate: _gridDelegate(context),
                 ),
               )
             else if (_error != null)
-              SliverFillRemaining(child: _ErrorState(error: _error!, onRetry: _loadProjects))
+              SliverFillRemaining(
+                  child: _ErrorState(error: _error!, onRetry: _loadProjects))
             else if (_filtered.isEmpty)
-              SliverFillRemaining(child: _EmptyState(hasFilter: _selectedStack != 'All' || _searchQuery.isNotEmpty))
+              SliverFillRemaining(
+                  child: _EmptyState(
+                      hasFilter:
+                          _selectedStack != 'All' || _searchQuery.isNotEmpty))
             else
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -250,12 +307,12 @@ class _HomePageState extends State<HomePage> {
       crossAxisCount: columns,
       crossAxisSpacing: 14,
       mainAxisSpacing: 14,
-      childAspectRatio: 1.35,
+      childAspectRatio: 1.4,
     );
   }
 }
 
-// ── Empty state ────────────────────────────────────────────────────────────────
+// ── Empty state ───────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final bool hasFilter;
   const _EmptyState({required this.hasFilter});
@@ -290,7 +347,7 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Error state ────────────────────────────────────────────────────────────────
+// ── Error state ───────────────────────────────────────────────────────────────
 class _ErrorState extends StatelessWidget {
   final String error;
   final VoidCallback onRetry;

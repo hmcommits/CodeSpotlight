@@ -1,19 +1,84 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/project_model.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/heartbeat_badge.dart';
 import '../widgets/language_bar.dart';
 
-class ProjectDetailPage extends StatelessWidget {
+class ProjectDetailPage extends StatefulWidget {
   final Project project;
 
   const ProjectDetailPage({super.key, required this.project});
 
   @override
+  State<ProjectDetailPage> createState() => _ProjectDetailPageState();
+}
+
+class _ProjectDetailPageState extends State<ProjectDetailPage> {
+  late Project _project;
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _project = widget.project;
+    // Start polling if AI is still pending
+    if (_project.aiStatus == 'pending') {
+      _startPolling();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
+      try {
+        final data = await ApiService.pollAiStatus(_project.id);
+        final status = data['aiStatus'] as String? ?? 'pending';
+        if (status != 'pending') {
+          _pollTimer?.cancel();
+          if (mounted) {
+            setState(() {
+              _project = _project.copyWith(
+                aiStatus: status,
+                aiSummary: data['aiSummary'] as String? ?? '',
+                mermaidDiagram: data['mermaidDiagram'] as String? ?? '',
+              );
+            });
+          }
+        }
+      } catch (_) {
+        // Silently ignore poll errors — just keep trying
+      }
+    });
+  }
+
+  Future<void> _reanalyze() async {
+    try {
+      await ApiService.reanalyze(_project.id);
+      setState(() {
+        _project = _project.copyWith(aiStatus: 'pending');
+      });
+      _startPolling();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Re-analysis failed: $e')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final langColor = AppTheme.languageColor(project.primaryLanguage);
+    final langColor = AppTheme.languageColor(_project.primaryLanguage);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -33,7 +98,7 @@ class ProjectDetailPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      langColor.withOpacity(0.3),
+                      langColor.withValues(alpha: 0.3),
                       AppTheme.background,
                     ],
                     begin: Alignment.topCenter,
@@ -58,28 +123,28 @@ class ProjectDetailPage extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              project.primaryLanguage,
+                              _project.primaryLanguage,
                               style: AppTheme.labelSmall.copyWith(
                                 color: langColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             const Spacer(),
-                            if (project.liveUrl.isNotEmpty)
-                              HeartbeatBadge(status: project.heartbeatStatus),
+                            if (_project.liveUrl.isNotEmpty)
+                              HeartbeatBadge(status: _project.heartbeatStatus),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          project.repo,
+                          _project.repo,
                           style: AppTheme.displayLarge,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          project.owner,
+                          _project.owner,
                           style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.primary.withOpacity(0.9),
+                            color: AppTheme.primary.withValues(alpha: 0.9),
                           ),
                         ),
                       ],
@@ -102,21 +167,21 @@ class ProjectDetailPage extends StatelessWidget {
                     children: [
                       _Stat(
                         icon: Icons.star_rounded,
-                        label: '${project.stars}',
+                        label: '${_project.stars}',
                         subtitle: 'Stars',
                         color: AppTheme.warning,
                       ),
-                      _Divider(),
+                      _VerticalDivider(),
                       _Stat(
                         icon: Icons.fork_right_rounded,
-                        label: '${project.forks}',
+                        label: '${_project.forks}',
                         subtitle: 'Forks',
                         color: AppTheme.textSecondary,
                       ),
-                      _Divider(),
+                      _VerticalDivider(),
                       _Stat(
                         icon: Icons.code_rounded,
-                        label: project.primaryLanguage,
+                        label: _project.primaryLanguage,
                         subtitle: 'Language',
                         color: langColor,
                       ),
@@ -127,42 +192,42 @@ class ProjectDetailPage extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Language bar
-                if (project.languages.isNotEmpty) ...[
+                if (_project.languages.isNotEmpty) ...[
                   _SectionLabel('Language Breakdown'),
                   _SectionCard(
-                    child: LanguageBar(languages: project.languages),
+                    child: LanguageBar(languages: _project.languages),
                   ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1),
                   const SizedBox(height: 16),
                 ],
 
                 // Description
-                if (project.description.isNotEmpty) ...[
+                if (_project.description.isNotEmpty) ...[
                   _SectionLabel('About'),
                   _SectionCard(
-                    child: Text(project.description, style: AppTheme.bodyMedium),
+                    child: Text(_project.description, style: AppTheme.bodyMedium),
                   ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
                   const SizedBox(height: 16),
                 ],
 
                 // Tech stack
-                if (project.techStack.isNotEmpty) ...[
+                if (_project.techStack.isNotEmpty) ...[
                   _SectionLabel('Tech Stack'),
                   _SectionCard(
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: project.techStack.map((t) {
+                      children: _project.techStack.map((t) {
                         return Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.primary.withOpacity(0.12),
+                            color: AppTheme.primary.withValues(alpha: 0.12),
                             borderRadius:
                                 BorderRadius.circular(AppTheme.radiusChip),
                             border: Border.all(
-                              color: AppTheme.primary.withOpacity(0.3),
+                              color: AppTheme.primary.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(t, style: AppTheme.labelSmall),
@@ -173,40 +238,30 @@ class ProjectDetailPage extends StatelessWidget {
                   const SizedBox(height: 16),
                 ],
 
-                // AI Summary
+                // AI Summary — live polling
                 _SectionLabel('Technical Deep Dive'),
                 _SectionCard(
-                  child: _AISummarySection(project: project),
+                  child: _AISummarySection(
+                    project: _project,
+                    onReanalyze: _reanalyze,
+                  ),
                 ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
                 const SizedBox(height: 16),
 
-                // Architecture diagram placeholder (Phase 2)
+                // Mermaid placeholder (Phase 2)
                 _SectionLabel('Architecture Diagram'),
                 _SectionCard(
                   child: Container(
-                    height: 120,
+                    height: 100,
                     alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppTheme.background,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusChip),
-                      border: Border.all(
-                        color: AppTheme.border,
-                        style: BorderStyle.solid,
-                      ),
-                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.account_tree_outlined,
-                          color: AppTheme.textMuted,
-                          size: 32,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Mermaid diagram — coming in Phase 2',
-                          style: AppTheme.bodySmall,
-                        ),
+                        Icon(Icons.account_tree_outlined,
+                            color: AppTheme.textMuted, size: 28),
+                        const SizedBox(height: 6),
+                        Text('Mermaid diagram — Phase 2',
+                            style: AppTheme.bodySmall),
                       ],
                     ),
                   ),
@@ -217,10 +272,10 @@ class ProjectDetailPage extends StatelessWidget {
                 _SectionLabel('Proof of Effort'),
                 _SectionCard(
                   child: Container(
-                    height: 80,
+                    height: 70,
                     alignment: Alignment.center,
                     child: Text(
-                      'Commit heatmap & language constellation — coming in Phase 2',
+                      'Commit heatmap & language constellation — Phase 2',
                       style: AppTheme.bodySmall,
                       textAlign: TextAlign.center,
                     ),
@@ -234,7 +289,7 @@ class ProjectDetailPage extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _launch(
-                          'https://github.com/${project.fullName}',
+                          'https://github.com/${_project.fullName}',
                         ),
                         icon: const Icon(Icons.open_in_new, size: 16),
                         label: const Text('View on GitHub'),
@@ -245,12 +300,13 @@ class ProjectDetailPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (project.liveUrl.isNotEmpty) ...[
+                    if (_project.liveUrl.isNotEmpty) ...[
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _launch(project.liveUrl),
-                          icon: const Icon(Icons.rocket_launch_rounded, size: 16),
+                          onPressed: () => _launch(_project.liveUrl),
+                          icon: const Icon(Icons.rocket_launch_rounded,
+                              size: 16),
                           label: const Text('Visit Live Site'),
                         ),
                       ),
@@ -336,7 +392,7 @@ class _Stat extends StatelessWidget {
   }
 }
 
-class _Divider extends StatelessWidget {
+class _VerticalDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(width: 1, height: 40, color: AppTheme.border);
@@ -345,7 +401,12 @@ class _Divider extends StatelessWidget {
 
 class _AISummarySection extends StatelessWidget {
   final Project project;
-  const _AISummarySection({required this.project});
+  final VoidCallback onReanalyze;
+
+  const _AISummarySection({
+    required this.project,
+    required this.onReanalyze,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -353,29 +414,49 @@ class _AISummarySection extends StatelessWidget {
       return Row(
         children: [
           const SizedBox(
-            width: 14,
-            height: 14,
+            width: 16,
+            height: 16,
             child: CircularProgressIndicator(
               strokeWidth: 2,
               color: AppTheme.primary,
             ),
           ),
-          const SizedBox(width: 10),
-          Text('AI is analyzing this repository...', style: AppTheme.bodyMedium),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Gemini is analyzing this repository… checking every 4s',
+              style: AppTheme.bodyMedium,
+            ),
+          ),
         ],
       );
     }
 
     if (project.aiStatus == 'failed' || project.aiSummary.isEmpty) {
-      return Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.warning_amber_rounded,
-              color: AppTheme.warning, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'AI analysis could not be completed for this repository.',
-              style: AppTheme.bodyMedium,
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: AppTheme.warning, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'AI analysis failed. You can retry below.',
+                  style: AppTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: onReanalyze,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Retry AI Analysis'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.primary,
+              side: const BorderSide(color: AppTheme.primary),
             ),
           ),
         ],
@@ -390,11 +471,12 @@ class _AISummarySection extends StatelessWidget {
             ShaderMask(
               shaderCallback: (bounds) =>
                   AppTheme.primaryGradient.createShader(bounds),
-              child: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
+              child: const Icon(Icons.auto_awesome,
+                  size: 16, color: Colors.white),
             ),
             const SizedBox(width: 6),
             Text(
-              'AI-Generated Analysis',
+              'AI-Generated Analysis · gemini-2.5-flash',
               style: AppTheme.labelSmall.copyWith(color: AppTheme.primary),
             ),
           ],

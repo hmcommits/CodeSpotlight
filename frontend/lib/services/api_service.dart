@@ -114,4 +114,21 @@ class ApiService {
       return false;
     }
   }
+
+  // ── GET /api/projects/:id/ai-status ─────────────────────────────────────────
+  // Poll this every N seconds while aiStatus == 'pending'
+  static Future<Map<String, dynamic>> pollAiStatus(String id) async {
+    final uri = Uri.parse('$baseUrl/projects/$id/ai-status');
+    final response = await http.get(uri, headers: _headers).timeout(_timeout);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to poll AI status');
+  }
+
+  // ── POST /api/projects/:id/reanalyze ────────────────────────────────────────
+  static Future<void> reanalyze(String id) async {
+    final uri = Uri.parse('$baseUrl/projects/$id/reanalyze');
+    await http.post(uri, headers: _headers).timeout(_timeout);
+  }
 }

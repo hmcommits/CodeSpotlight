@@ -155,4 +155,64 @@ router.get('/:id/commit-activity', async (req, res, next) => {
   }
 });
 
+// ─── GET /api/projects/:id/ai-status ────────────────────────────────────────
+// Lightweight poll endpoint — Flutter calls this every 5s to check AI progress
+router.get('/:id/ai-status', async (req, res, next) => {
+  try {
+    const project = await Project.findById(req.params.id)
+      .select('aiStatus aiSummary mermaidDiagram');
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    res.json({
+      aiStatus: project.aiStatus,
+      aiSummary: project.aiSummary,
+      mermaidDiagram: project.mermaidDiagram,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/projects/:id/reanalyze ───────────────────────────────────────
+// Re-trigger Gemini for a failed project (without re-fetching from GitHub)
+router.post('/:id/reanalyze', async (req, res, next) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    // Reset status
+    await Project.findByIdAndUpdate(project._id, { aiStatus: 'pending' });
+    res.json({ message: 'Re-analysis queued' });
+
+    // Fire off async re-analysis using stored file tree and metadata
+    const repoContext = {
+      fullName: project.fullName,
+      owner: project.owner,
+      repo: project.repo,
+      description: project.description,
+      primaryLanguage: project.primaryLanguage,
+      languages: project.languages || {},
+      fileTree: project.fileTree || [],
+      keyFilesContent: '',
+      techStack: project.techStack || [],
+      topics: project.topics || [],
+    };
+
+    try {
+      const { summary, mermaid } = await generateProjectAnalysis(repoContext);
+      await Project.findByIdAndUpdate(project._id, {
+        aiSummary: summary,
+        mermaidDiagram: mermaid,
+        aiStatus: 'done',
+      });
+      console.log(`✅ Re-analysis complete for ${project.fullName}`);
+    } catch (aiErr) {
+      await Project.findByIdAndUpdate(project._id, { aiStatus: 'failed' });
+      console.error(`❌ Re-analysis failed for ${project.fullName}:`, aiErr.message);
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
+
