@@ -24,6 +24,7 @@ class ProjectDetailPage extends StatefulWidget {
 class _ProjectDetailPageState extends State<ProjectDetailPage> {
   late Project _project;
   Timer? _pollTimer;
+  List<List<int>> _commitData = [];
 
   @override
   void initState() {
@@ -32,6 +33,21 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     // Start polling if AI is still pending
     if (_project.aiStatus == 'pending') {
       _startPolling();
+    }
+    // Load real commit data from GitHub (via backend proxy)
+    _loadCommitActivity();
+  }
+
+  Future<void> _loadCommitActivity() async {
+    try {
+      final data = await ApiService.getCommitActivity(_project.id);
+      if (mounted && data.isNotEmpty) {
+        setState(() => _commitData = data);
+      } else if (mounted) {
+        setState(() => _commitData = generateDemoHeatmapData());
+      }
+    } catch (_) {
+      if (mounted) setState(() => _commitData = generateDemoHeatmapData());
     }
   }
 
@@ -298,7 +314,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       ]),
                       const SizedBox(height: 12),
                       CommitHeatmap(
-                        weeklyData: generateDemoHeatmapData(),
+                        weeklyData: _commitData.isNotEmpty
+                            ? _commitData
+                            : generateDemoHeatmapData(),
                         accentColor: AppTheme.languageColor(
                             _project.primaryLanguage),
                       ),

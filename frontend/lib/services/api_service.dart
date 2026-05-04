@@ -131,4 +131,25 @@ class ApiService {
     final uri = Uri.parse('$baseUrl/projects/$id/reanalyze');
     await http.post(uri, headers: _headers).timeout(_timeout);
   }
+
+  // ── GET /api/projects/:id/commit-activity ────────────────────────────────────
+  // Returns 52 weeks × 7 days of commit counts from GitHub stats API.
+  // GitHub may return 202 (computing) — returns empty list in that case.
+  static Future<List<List<int>>> getCommitActivity(String id) async {
+    try {
+      final uri = Uri.parse('$baseUrl/projects/$id/commit-activity');
+      final response = await http.get(uri, headers: _headers).timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final rawList = data['commitActivity'] as List<dynamic>? ?? [];
+        // Each entry: { week: timestamp, days: [0..6], total: n }
+        return rawList.map<List<int>>((week) {
+          final days = week['days'] as List<dynamic>? ?? [];
+          return days.map<int>((d) => (d as num).toInt()).toList();
+        }).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
 }
