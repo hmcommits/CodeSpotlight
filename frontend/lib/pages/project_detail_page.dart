@@ -13,6 +13,7 @@ import '../widgets/heartbeat_badge.dart';
 import '../widgets/language_bar.dart';
 import '../widgets/language_constellation.dart';
 import '../widgets/mermaid_diagram_view.dart';
+import '../widgets/video_player_view.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final Project project;
@@ -246,6 +247,15 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   _SectionCard(
                     child: Text(_project.description, style: AppTheme.bodyMedium),
                   ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
+                  const SizedBox(height: 16),
+                ],
+
+                // Demo Video (YouTube / Loom / direct MP4)
+                if (_project.videoUrl.isNotEmpty) ...[
+                  _SectionLabel('Demo Video'),
+                  _SectionCard(
+                    child: VideoPlayerView(videoUrl: _project.videoUrl),
+                  ).animate().fadeIn(delay: 220.ms).slideY(begin: 0.1),
                   const SizedBox(height: 16),
                 ],
 
