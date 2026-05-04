@@ -34,29 +34,14 @@ class _ProjectCardState extends State<ProjectCard> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
-              // Solid surface — no BackdropFilter needed on dark bg
               color: AppTheme.surface,
               borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-              border: Border(
-                left: BorderSide(color: langColor, width: 3),
-                top: BorderSide(
-                  color: _hovered
-                      ? langColor.withValues(alpha: 0.35)
-                      : AppTheme.border,
-                  width: 1,
-                ),
-                right: BorderSide(
-                  color: _hovered
-                      ? langColor.withValues(alpha: 0.15)
-                      : AppTheme.border,
-                  width: 1,
-                ),
-                bottom: BorderSide(
-                  color: _hovered
-                      ? langColor.withValues(alpha: 0.15)
-                      : AppTheme.border,
-                  width: 1,
-                ),
+              // All sides must be the SAME color when borderRadius is set — Flutter rule.
+              // The left accent is drawn as a separate Positioned child inside the Stack.
+              border: Border.all(
+                color: _hovered
+                    ? langColor.withValues(alpha: 0.35)
+                    : AppTheme.border,
               ),
               boxShadow: _hovered
                   ? [
@@ -75,123 +60,159 @@ class _ProjectCardState extends State<ProjectCard> {
                       ),
                     ],
             ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
               children: [
-                // ── Header ────────────────────────────────────────────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Language dot
-                    Padding(
-                      padding: const EdgeInsets.only(top: 3),
-                      child: Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          color: langColor,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: langColor.withValues(alpha: 0.5),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
+                // ── Language accent bar (left edge) ────────────────────────────
+                // Drawn inside Stack to bypass the non-uniform border color rule
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 3,
+                    decoration: BoxDecoration(
+                      color: langColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(AppTheme.radiusCard),
+                        bottomLeft: Radius.circular(AppTheme.radiusCard),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: langColor.withValues(alpha: 0.5),
+                          blurRadius: 6,
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
+                  ),
+                ),
+
+                // ── Card content ───────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(19, 14, 14, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header row
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            widget.project.repo,
-                            style: AppTheme.titleMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            widget.project.owner,
-                            style: AppTheme.bodySmall.copyWith(
-                              color: AppTheme.primary.withValues(alpha: 0.8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Container(
+                              width: 9,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                color: langColor,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: langColor.withValues(alpha: 0.5),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.project.repo,
+                                  style: AppTheme.titleMedium,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  widget.project.owner,
+                                  style: AppTheme.bodySmall.copyWith(
+                                    color: AppTheme.primary
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (widget.project.liveUrl.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 6),
+                              child: HeartbeatBadge(
+                                status: widget.project.heartbeatStatus,
+                              ),
+                            ),
                         ],
                       ),
-                    ),
-                    if (widget.project.liveUrl.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: HeartbeatBadge(
-                          status: widget.project.heartbeatStatus,
-                        ),
+                      const SizedBox(height: 10),
+
+                      // Description
+                      Text(
+                        widget.project.description.isNotEmpty
+                            ? widget.project.description
+                            : 'No description available.',
+                        style: AppTheme.bodyMedium,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                  ],
-                ),
-                const SizedBox(height: 10),
+                      const SizedBox(height: 12),
 
-                // ── Description ───────────────────────────────────────────────
-                Text(
-                  widget.project.description.isNotEmpty
-                      ? widget.project.description
-                      : 'No description available.',
-                  style: AppTheme.bodyMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
+                      // Language bar
+                      if (widget.project.languages.isNotEmpty)
+                        LanguageBar(languages: widget.project.languages),
 
-                // ── Language bar ──────────────────────────────────────────────
-                if (widget.project.languages.isNotEmpty)
-                  LanguageBar(languages: widget.project.languages),
+                      const Spacer(),
 
-                const Spacer(),
-
-                // ── Footer ────────────────────────────────────────────────────
-                Row(
-                  children: [
-                    _StatChip(
-                      icon: Icons.star_rounded,
-                      label: _formatNum(widget.project.stars),
-                      color: AppTheme.warning,
-                    ),
-                    const SizedBox(width: 10),
-                    _StatChip(
-                      icon: Icons.fork_right_rounded,
-                      label: _formatNum(widget.project.forks),
-                      color: AppTheme.textSecondary,
-                    ),
-                    const Spacer(),
-                    _StatusBadge(aiStatus: widget.project.aiStatus),
-                  ],
-                ),
-
-                // ── Tech stack chips ──────────────────────────────────────────
-                if (widget.project.techStack.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 5,
-                    runSpacing: 4,
-                    children: widget.project.techStack.take(3).map((t) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primary.withValues(alpha: 0.1),
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusSmall),
-                          border: Border.all(
-                            color: AppTheme.primary.withValues(alpha: 0.25),
+                      // Stats footer
+                      Row(
+                        children: [
+                          _StatChip(
+                            icon: Icons.star_rounded,
+                            label: _formatNum(widget.project.stars),
+                            color: AppTheme.warning,
                           ),
+                          const SizedBox(width: 10),
+                          _StatChip(
+                            icon: Icons.fork_right_rounded,
+                            label: _formatNum(widget.project.forks),
+                            color: AppTheme.textSecondary,
+                          ),
+                          const Spacer(),
+                          _StatusBadge(aiStatus: widget.project.aiStatus),
+                        ],
+                      ),
+
+                      // Tech stack chips
+                      if (widget.project.techStack.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 5,
+                          runSpacing: 4,
+                          children:
+                              widget.project.techStack.take(3).map((t) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    AppTheme.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusSmall),
+                                border: Border.all(
+                                  color: AppTheme.primary
+                                      .withValues(alpha: 0.25),
+                                ),
+                              ),
+                              child: Text(t, style: AppTheme.labelSmall),
+                            );
+                          }).toList(),
                         ),
-                        child: Text(t, style: AppTheme.labelSmall),
-                      );
-                    }).toList(),
+                      ],
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -250,7 +271,8 @@ class _StatusBadge extends StatelessWidget {
           children: [
             const Icon(Icons.auto_awesome, size: 9, color: Colors.white),
             const SizedBox(width: 3),
-            Text('AI', style: AppTheme.labelSmall.copyWith(color: Colors.white)),
+            Text('AI',
+                style: AppTheme.labelSmall.copyWith(color: Colors.white)),
           ],
         ),
       );
@@ -276,7 +298,9 @@ class _StatusBadge extends StatelessWidget {
             ),
           ),
         ],
-      ).animate(onPlay: (c) => c.repeat()).shimmer(
+      )
+          .animate(onPlay: (c) => c.repeat())
+          .shimmer(
             duration: 1500.ms,
             color: AppTheme.primary.withValues(alpha: 0.3),
           );
