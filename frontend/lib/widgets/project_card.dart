@@ -22,17 +22,19 @@ class _ProjectCardState extends State<ProjectCard> {
   Widget build(BuildContext context) {
     final langColor = AppTheme.languageColor(widget.project.primaryLanguage);
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _hovered ? 1.025 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: AnimatedContainer(
+    return Hero(
+      tag: 'project-card-${widget.project.id}',
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedScale(
+            scale: _hovered ? 1.025 : 1.0,
             duration: const Duration(milliseconds: 200),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               color: AppTheme.surface,
               borderRadius: BorderRadius.circular(AppTheme.radiusCard),
@@ -218,7 +220,8 @@ class _ProjectCardState extends State<ProjectCard> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   String _formatNum(int n) {

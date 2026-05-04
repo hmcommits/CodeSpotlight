@@ -98,60 +98,63 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               onPressed: () => Navigator.of(context).pop(),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      langColor.withValues(alpha: 0.3),
-                      AppTheme.background,
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: langColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _project.primaryLanguage,
-                              style: AppTheme.labelSmall.copyWith(
-                                color: langColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Spacer(),
-                            if (_project.liveUrl.isNotEmpty)
-                              HeartbeatBadge(status: _project.heartbeatStatus),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _project.repo,
-                          style: AppTheme.displayLarge,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          _project.owner,
-                          style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.primary.withValues(alpha: 0.9),
-                          ),
-                        ),
+              background: Hero(
+                tag: 'project-card-${_project.id}',
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        langColor.withValues(alpha: 0.3),
+                        AppTheme.background,
                       ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: langColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _project.primaryLanguage,
+                                style: AppTheme.labelSmall.copyWith(
+                                  color: langColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (_project.liveUrl.isNotEmpty)
+                                HeartbeatBadge(status: _project.heartbeatStatus),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _project.repo,
+                            style: AppTheme.displayLarge,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            _project.owner,
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.primary.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
