@@ -180,6 +180,35 @@ class _ProjectCardState extends State<ProjectCard> {
                             color: AppTheme.textSecondary,
                           ),
                           const Spacer(),
+                          // Video pill — shown when a demo video exists
+                          if (widget.project.videoUrl.isNotEmpty) ...[ 
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: 0.12),
+                                borderRadius:
+                                    BorderRadius.circular(AppTheme.radiusSmall),
+                                border: Border.all(
+                                    color: Colors.red.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.play_arrow_rounded,
+                                      size: 10,
+                                      color: Colors.red.withValues(alpha: 0.8)),
+                                  const SizedBox(width: 3),
+                                  Text('Demo',
+                                      style: AppTheme.labelSmall.copyWith(
+                                          color: Colors.red.withValues(
+                                              alpha: 0.85),
+                                          fontSize: 9)),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
                           _StatusBadge(aiStatus: widget.project.aiStatus),
                         ],
                       ),

@@ -16,7 +16,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   List<Project> _projects = [];
   List<Project> _filtered = [];
   bool _loading = true;
@@ -31,14 +31,22 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadProjects();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     _pendingPollTimer?.cancel();
     super.dispose();
+  }
+
+  // Reload projects when the user navigates back from another page
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadProjects();
   }
 
   Future<void> _loadProjects() async {
@@ -257,6 +265,8 @@ class _HomePageState extends State<HomePage> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 sliver: SliverGrid(
+                  // Key changes when filter/search changes → cards re-animate
+                  key: ValueKey('$_selectedStack|$_searchQuery'),
                   delegate: SliverChildBuilderDelegate(
                     (context, i) {
                       final project = _filtered[i];
@@ -264,9 +274,9 @@ class _HomePageState extends State<HomePage> {
                         project: project,
                         onTap: () => _openDetail(project),
                       )
-                          .animate(delay: (i * 50).ms)
-                          .fadeIn()
-                          .slideY(begin: 0.15, curve: Curves.easeOut);
+                          .animate(delay: (i * 45).ms)
+                          .fadeIn(duration: 350.ms)
+                          .slideY(begin: 0.12, curve: Curves.easeOut);
                     },
                     childCount: _filtered.length,
                   ),

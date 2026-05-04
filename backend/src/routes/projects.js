@@ -214,5 +214,58 @@ router.post('/:id/reanalyze', async (req, res, next) => {
   }
 });
 
+// ─── POST /api/admin/reanalyze-all ──────────────────────────────────────────
+// Re-runs Gemini analysis on ALL projects sequentially (rate-limit friendly).
+// Use this after updating the prompt to regenerate diagrams for existing data.
+// Returns immediately; progress is logged server-side.
+router.post('/admin/reanalyze-all', async (req, res, next) => {
+  try {
+    const projects = await Project.find({}).select('_id fullName fileTree');
+    res.json({ message: `Queued ${projects.length} projects for re-analysis` });
+
+    // Fire-and-forget: run sequentially with 3s gap to respect Gemini rate limits
+    (async () => {
+      for (const p of projects) {
+        if (!p.fileTree || p.fileTree.length === 0) {
+          console.log(`⏭  Skipping ${p.fullName} — no cached file tree`);
+          continue;
+        }
+        console.log(`🔄 Re-analyzing ${p.fullName}...`);
+        try {
+          await Project.findByIdAndUpdate(p._id, { aiStatus: 'pending' });
+          const full = await Project.findById(p._id);
+          const repoContext = {
+            fullName: full.fullName,
+            owner: full.owner,
+            repo: full.repo,
+            description: full.description,
+            primaryLanguage: full.primaryLanguage,
+            languages: full.languages || {},
+            fileTree: full.fileTree || [],
+            keyFilesContent: '',
+            techStack: full.techStack || [],
+            topics: full.topics || [],
+          };
+          const { summary, mermaid } = await generateProjectAnalysis(repoContext);
+          await Project.findByIdAndUpdate(p._id, {
+            aiSummary: summary,
+            mermaidDiagram: mermaid,
+            aiStatus: 'done',
+          });
+          console.log(`✅ Re-analysis done: ${p.fullName}`);
+        } catch (err) {
+          await Project.findByIdAndUpdate(p._id, { aiStatus: 'failed' });
+          console.error(`❌ Re-analysis failed: ${p.fullName} — ${err.message}`);
+        }
+        // 3s pause between projects to avoid Gemini rate limits
+        await new Promise(r => setTimeout(r, 3000));
+      }
+      console.log('🎉 Bulk re-analysis complete');
+    })();
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
 
