@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
@@ -196,22 +196,24 @@ class _ConstellationPainter extends CustomPainter {
       canvas.drawCircle(Offset(cx, cy), b.radius - 2, paint);
       paint.style = PaintingStyle.fill;
 
-      // Label: language name
-      if (b.radius > 22) {
+      // Label: always show if radius > 14 (was 22 — too restrictive for secondary languages)
+      if (b.radius > 14) {
+        final labelFontSize = b.radius > 40 ? 12.0 : b.radius > 22 ? 10.0 : 8.0;
+        final pctFontSize = b.radius > 40 ? 10.0 : 8.0;
         textPainter
           ..text = TextSpan(
             text: b.label,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.95),
-              fontSize: b.radius > 40 ? 12 : 9,
+              fontSize: labelFontSize,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.2,
             ),
           )
-          ..layout(maxWidth: b.radius * 2 - 6);
+          ..layout(maxWidth: b.radius * 2 - 4);
         textPainter.paint(
           canvas,
-          Offset(cx - textPainter.width / 2, cy - textPainter.height - 2),
+          Offset(cx - textPainter.width / 2, cy - textPainter.height - 1),
         );
 
         // Percentage below label
@@ -220,11 +222,11 @@ class _ConstellationPainter extends CustomPainter {
             text: '${b.percentage}%',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.7),
-              fontSize: b.radius > 40 ? 10 : 8,
+              fontSize: pctFontSize,
               fontWeight: FontWeight.w400,
             ),
           )
-          ..layout(maxWidth: b.radius * 2 - 6);
+          ..layout(maxWidth: b.radius * 2 - 4);
         textPainter.paint(
           canvas,
           Offset(cx - textPainter.width / 2, cy + 2),

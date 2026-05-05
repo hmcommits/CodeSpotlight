@@ -29,11 +29,29 @@ router.post('/', optionalAuth, async (req, res, next) => {
     const { owner, repo } = validateGitHubUrl(githubUrl);
     const fullName = `${owner}/${repo}`;
 
-    // Prevent duplicate within same user / demo session
+    // Check for duplicate within same user / demo session
     const filter = scopeFilter(req);
     const existing = await Project.findOne({ fullName, ...filter });
-    if (existing)
-      return res.status(200).json({ message: 'Project already analyzed', project: existing });
+    if (existing) {
+      // Refresh stale metadata in the background, return quickly
+      res.status(200).json({ message: 'Project already added — refreshing metadata.', project: existing });
+      // Async refresh of description/stars/languages
+      extractAllRepoData(owner, repo).then(async (repoData) => {
+        await Project.findByIdAndUpdate(existing._id, {
+          description:     repoData.description,
+          stars:           repoData.stars,
+          forks:           repoData.forks,
+          primaryLanguage: repoData.primaryLanguage,
+          languages:       repoData.languages,
+          topics:          repoData.topics,
+          techStack:       repoData.techStack,
+          ...(liveUrl  && { liveUrl }),
+          ...(videoUrl && { videoUrl }),
+        });
+        console.log(`🔄 Refreshed metadata for ${fullName}`);
+      }).catch(err => console.warn(`⚠️  Metadata refresh failed for ${fullName}:`, err.message));
+      return;
+    }
 
     // Fetch GitHub data
     const repoData = await extractAllRepoData(owner, repo);

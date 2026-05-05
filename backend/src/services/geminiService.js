@@ -16,48 +16,21 @@ function sanitizeMermaid(raw) {
   // Remove markdown code fence wrappers
   d = d.replace(/^```(?:mermaid)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
-  // Ensure starts with graph TD
+  // Ensure starts with a valid graph directive
   if (!d.match(/^graph\s+(TD|LR|TB|BT|RL)/i)) {
     d = 'graph TD\n' + d;
   }
 
   // Fix old-style single arrow: -> becomes -->
-  d = d.replace(/->/g, '-->');
+  d = d.replace(/(?<!-)->(?!>)/g, '-->');
 
-  // Fix: Node --> [Label] NextNode --> merge to Node -->|"Label"| NextNode
-  // Pattern: --> [some label] NodeId
-  d = d.replace(/-->\s*\[([^\]]+)\]\s+(\w+)/g, (_, label, nodeId) => {
-    const cleanLabel = label.trim().replace(/"/g, "'");
-    return `-->|"${cleanLabel}"| ${nodeId}`;
-  });
-
-  // Fix: NodeId(Label) at start of a line (node definition, not arrow target)
-  // Converts: User(Patient / Guardian) → User["Patient / Guardian"]
-  // Only if NOT followed immediately by [ (that would be Node(subgraph style) which is different)
-  d = d.replace(/^(\s*)(\w+)\(([^)]+)\)(?!\s*-->)/gm, (match, indent, id, label) => {
-    const cleanLabel = label.trim().replace(/"/g, "'");
-    return `${indent}${id}["${cleanLabel}"]`;
-  });
-
-  // Fix: double parens ((circle)) → ["label"]
+  // Fix double parens ((circle)) → ["label"]
   d = d.replace(/\(\(([^)]+)\)\)/g, '["$1"]');
 
-  // Fix: curly brace nodes with slashes or parens inside → quote the label
-  d = d.replace(/\{([^}]*[/()\s][^}]*)\}/g, (_, inner) => {
-    return `{"${inner.replace(/"/g, "'")}"}`;
-  });
-
-  // Fix: parentheses INSIDE square bracket labels are fine for Mermaid v11,
-  // but some versions choke on them. Replace with spaces.
-  // e.g. [Mobile Application (React Native)] → [Mobile Application React Native]
-  d = d.replace(/\[([^\]]*)\(([^)]*)\)([^\]]*)\]/g, (_, pre, inner, post) => {
-    return `["${pre}${inner}${post}".trim()]`;
-  });
-  // Simpler cleanup: remove parens inside [] labels
-  d = d.replace(/\[([^\]]+)\]/g, (match, inner) => {
-    if (inner.startsWith('"') || inner.startsWith("'")) return match; // already quoted
-    const cleaned = inner.replace(/[()]/g, '');
-    return `["${cleaned.replace(/"/g, "'")}"]`;
+  // Fix node definitions like: NodeId(Label Text) → NodeId["Label Text"]
+  // Only at start of a line (node declaration, not mid-arrow)
+  d = d.replace(/^([ \t]*)(\w+)\(([^)]+)\)\s*$/gm, (_, indent, id, label) => {
+    return `${indent}${id}["${label.trim().replace(/"/g, "'")}"}`;
   });
 
   // Collapse excessive blank lines
