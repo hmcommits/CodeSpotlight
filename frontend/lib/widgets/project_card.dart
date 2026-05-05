@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/project_model.dart';
 import '../theme/app_theme.dart';
@@ -23,90 +24,76 @@ class _ProjectCardState extends State<ProjectCard> {
   @override
   Widget build(BuildContext context) {
     final langColor = AppTheme.languageColor(widget.project.primaryLanguage);
+    final p = widget.project;
 
     return Hero(
-      tag: 'project-card-${widget.project.id}',
+      tag: 'project-card-${p.id}',
       child: MouseRegion(
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: widget.onTap,
-          child: AnimatedScale(
-            scale: _hovered ? 1.025 : 1.0,
+          child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               color: AppTheme.surface,
               borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-              // All sides must be the SAME color when borderRadius is set â€” Flutter rule.
-              // The left accent is drawn as a separate Positioned child inside the Stack.
               border: Border.all(
                 color: _hovered
-                    ? langColor.withValues(alpha: 0.35)
+                    ? langColor.withValues(alpha: 0.5)
                     : AppTheme.border,
               ),
               boxShadow: _hovered
                   ? [
                       BoxShadow(
                         color: langColor.withValues(alpha: 0.2),
-                        blurRadius: 20,
+                        blurRadius: 24,
                         offset: const Offset(0, 6),
                         spreadRadius: -2,
                       ),
                     ]
                   : [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Colors.black.withValues(alpha: 0.25),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ],
             ),
+            // ── Column fills the grid cell; Stack expands to fill remaining space ──
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-            Stack(
-              children: [
-                // â”€â”€ Language accent bar (left edge) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                // Drawn inside Stack to bypass the non-uniform border color rule
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 3,
-                    decoration: BoxDecoration(
-                      color: langColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(AppTheme.radiusCard),
-                        bottomLeft: Radius.circular(AppTheme.radiusCard),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: langColor.withValues(alpha: 0.5),
-                          blurRadius: 6,
-                        ),
-                      ],
+                // ── Top accent bar ──────────────────────────────────────────
+                Container(
+                  height: 3,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [
+                      langColor,
+                      langColor.withValues(alpha: 0.3),
+                    ]),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(AppTheme.radiusCard),
+                      topRight: Radius.circular(AppTheme.radiusCard),
                     ),
                   ),
                 ),
 
-                // â”€â”€ Card content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(19, 14, 14, 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Header row
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 3),
-                            child: Container(
+                // ── Card body (expands to fill space) ──────────────────────
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header row: lang dot, repo name, live badge
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
                               width: 9,
                               height: 9,
                               decoration: BoxDecoration(
@@ -120,192 +107,168 @@ class _ProjectCardState extends State<ProjectCard> {
                                 ],
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.project.repo,
-                                  style: AppTheme.titleMedium,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  widget.project.owner,
-                                  style: AppTheme.bodySmall.copyWith(
-                                    color: AppTheme.primary
-                                        .withValues(alpha: 0.8),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (widget.project.liveUrl.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 6),
-                              child: HeartbeatBadge(
-                                status: widget.project.heartbeatStatus,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Description
-                      Text(
-                        widget.project.description.isNotEmpty
-                            ? widget.project.description
-                            : 'No description available.',
-                        style: AppTheme.bodyMedium,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Language bar
-                      if (widget.project.languages.isNotEmpty)
-                        LanguageBar(languages: widget.project.languages),
-
-                      const Spacer(),
-
-                      // Stats footer
-                      Row(
-                        children: [
-                          _StatChip(
-                            icon: Icons.star_rounded,
-                            label: _formatNum(widget.project.stars),
-                            color: AppTheme.warning,
-                          ),
-                          const SizedBox(width: 10),
-                          _StatChip(
-                            icon: Icons.fork_right_rounded,
-                            label: _formatNum(widget.project.forks),
-                            color: AppTheme.textSecondary,
-                          ),
-                          const Spacer(),
-                          // Video pill â€” shown when a demo video exists
-                          if (widget.project.videoUrl.isNotEmpty) ...[ 
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withValues(alpha: 0.12),
-                                borderRadius:
-                                    BorderRadius.circular(AppTheme.radiusSmall),
-                                border: Border.all(
-                                    color: Colors.red.withValues(alpha: 0.3)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(Icons.play_arrow_rounded,
-                                      size: 10,
-                                      color: Colors.red.withValues(alpha: 0.8)),
-                                  const SizedBox(width: 3),
-                                  Text('Demo',
-                                      style: AppTheme.labelSmall.copyWith(
-                                          color: Colors.red.withValues(
-                                              alpha: 0.85),
-                                          fontSize: 9)),
+                                  Text(
+                                    p.repo,
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    p.owner,
+                                    style: AppTheme.bodySmall.copyWith(
+                                      color: AppTheme.primary
+                                          .withValues(alpha: 0.8),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            if (p.liveUrl.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 6),
+                                child:
+                                    HeartbeatBadge(status: p.heartbeatStatus),
+                              ),
                           ],
-                          _StatusBadge(aiStatus: widget.project.aiStatus),
-                        ],
-                      ),
-
-                      // Tech stack chips
-                      if (widget.project.techStack.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 5,
-                          runSpacing: 4,
-                          children:
-                              widget.project.techStack.take(3).map((t) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    AppTheme.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.radiusSmall),
-                                border: Border.all(
-                                  color: AppTheme.primary
-                                      .withValues(alpha: 0.25),
-                                ),
-                              ),
-                              child: Text(t, style: AppTheme.labelSmall),
-                            );
-                          }).toList(),
                         ),
+
+                        const SizedBox(height: 10),
+
+                        // Description
+                        Expanded(
+                          child: Text(
+                            p.description.isNotEmpty
+                                ? p.description
+                                : 'No description available.',
+                            style: AppTheme.bodyMedium.copyWith(fontSize: 13),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // Stats + AI badge row
+                        Row(
+                          children: [
+                            _StatChip(
+                              icon: Icons.star_rounded,
+                              label: _fmt(p.stars),
+                              color: AppTheme.warning,
+                            ),
+                            const SizedBox(width: 10),
+                            _StatChip(
+                              icon: Icons.fork_right_rounded,
+                              label: _fmt(p.forks),
+                              color: AppTheme.textMuted,
+                            ),
+                            const Spacer(),
+                            _StatusBadge(aiStatus: p.aiStatus),
+                          ],
+                        ),
+
+                        // Language bar
+                        if (p.languages.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: SizedBox(
+                              height: 4,
+                              child: LanguageBar(languages: p.languages),
+                            ),
+                          ),
+                        ],
+
+                        // Tech chips
+                        if (p.techStack.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 5,
+                            runSpacing: 4,
+                            children: p.techStack.take(3).map((t) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusChip),
+                                  border: Border.all(
+                                    color: AppTheme.primary
+                                        .withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: Text(t,
+                                    style: AppTheme.labelSmall
+                                        .copyWith(fontSize: 10)),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
+                ),
+
+                // ── Action buttons (fixed height at bottom) ─────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: Row(children: [
+                    Expanded(
+                      child: _CardActionBtn(
+                        icon: Icons.code_rounded,
+                        label: 'GitHub',
+                        onTap: () async {
+                          final url = Uri.parse(
+                              'https://github.com/${p.fullName}');
+                          if (await canLaunchUrl(url)) {
+                            launchUrl(url,
+                                mode: LaunchMode.externalApplication);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _CardActionBtn(
+                        icon: Icons.share_rounded,
+                        label: 'LinkedIn',
+                        onTap: () => showLinkedInPostSheet(context, p),
+                        accent: const Color(0xFF0A66C2),
+                      ),
+                    ),
+                  ]),
                 ),
               ],
-            ),  // closes Stack
-
-            // â”€â”€ Card action buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: Row(children: [
-                Expanded(
-                  child: _CardAction(
-                    icon: const _GitHubIcon(),
-                    label: 'GitHub',
-                    onTap: () async {
-                      final url = Uri.parse(
-                          'https://github.com/${widget.project.fullName}');
-                      if (await canLaunchUrl(url)) {
-                        launchUrl(url, mode: LaunchMode.externalApplication);
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _CardAction(
-                    icon: const _LinkedInIcon(),
-                    label: 'LinkedIn Post',
-                    onTap: () => showLinkedInPostSheet(context, widget.project),
-                    accent: const Color(0xFF0A66C2),
-                  ),
-                ),
-              ]),
             ),
-          ],  // closes Column children
-        ),  // closes Column
-        ),  // closes AnimatedContainer
-        ),  // closes AnimatedScale
-      ),  // closes GestureDetector
-    ),  // closes MouseRegion
-  );  // closes Hero
+          ),
+        ),
+      ),
+    );
   }
 
-  String _formatNum(int n) {
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
-    return n.toString();
-  }
+  String _fmt(int n) =>
+      n >= 1000 ? '${(n / 1000).toStringAsFixed(1)}k' : '$n';
 }
 
-// â”€â”€ Stat chip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Stat chip ─────────────────────────────────────────────────────────────────
 class _StatChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
 
-  const _StatChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
+  const _StatChip(
+      {required this.icon, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -320,7 +283,7 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// â”€â”€ AI / pending status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── AI status badge ───────────────────────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
   final String aiStatus;
   const _StatusBadge({required this.aiStatus});
@@ -345,103 +308,41 @@ class _StatusBadge extends StatelessWidget {
         ),
       );
     }
-
     if (aiStatus == 'pending') {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 10,
-            height: 10,
+      return Row(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(
+            width: 8,
+            height: 8,
             child: CircularProgressIndicator(
-              strokeWidth: 1.5,
-              color: AppTheme.primary.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'Analyzing',
-            style: AppTheme.labelSmall.copyWith(
-              color: AppTheme.primary.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      )
-          .animate(onPlay: (c) => c.repeat())
-          .shimmer(
-            duration: 1500.ms,
-            color: AppTheme.primary.withValues(alpha: 0.3),
-          );
+                strokeWidth: 1.5, color: AppTheme.primary)),
+        const SizedBox(width: 5),
+        Text('Analyzing…',
+            style: AppTheme.labelSmall.copyWith(color: AppTheme.primary)),
+      ]);
     }
-
-    // failed
-    return const Icon(Icons.warning_amber_rounded,
-        size: 14, color: AppTheme.warning);
+    return const SizedBox.shrink();
   }
 }
 
-// â”€â”€ Shimmer loading placeholder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class LoadingBentoCard extends StatelessWidget {
-  const LoadingBentoCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-        border: Border.all(color: AppTheme.border),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _shimmerBox(height: 14, width: 130),
-          const SizedBox(height: 6),
-          _shimmerBox(height: 10, width: 80),
-          const SizedBox(height: 12),
-          _shimmerBox(height: 10, width: double.infinity),
-          const SizedBox(height: 5),
-          _shimmerBox(height: 10, width: 200),
-          const SizedBox(height: 14),
-          _shimmerBox(height: 6, width: double.infinity),
-          const Spacer(),
-          _shimmerBox(height: 10, width: 100),
-        ],
-      ),
-    )
-        .animate(onPlay: (c) => c.repeat())
-        .shimmer(duration: 1200.ms, color: AppTheme.surfaceLight);
-  }
-
-  Widget _shimmerBox({required double height, required double width}) {
-    return Container(
-      height: height,
-      width: width,
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(4),
-      ),
-    );
-  }
-}
-
-// â”€â”€ Card action button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class _CardAction extends StatefulWidget {
-  final Widget icon;
+// ── Card action button ────────────────────────────────────────────────────────
+class _CardActionBtn extends StatefulWidget {
+  final IconData icon;
   final String label;
   final VoidCallback onTap;
   final Color? accent;
-  const _CardAction(
-      {required this.icon, required this.label,
-       required this.onTap, this.accent});
+  const _CardActionBtn(
+      {required this.icon,
+      required this.label,
+      required this.onTap,
+      this.accent});
 
   @override
-  State<_CardAction> createState() => _CardActionState();
+  State<_CardActionBtn> createState() => _CardActionBtnState();
 }
 
-class _CardActionState extends State<_CardAction> {
+class _CardActionBtnState extends State<_CardActionBtn> {
   bool _hov = false;
+
   @override
   Widget build(BuildContext context) {
     final c = widget.accent ?? AppTheme.textSecondary;
@@ -451,50 +352,23 @@ class _CardActionState extends State<_CardAction> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: _hov ? c.withValues(alpha: 0.1) : AppTheme.surfaceHigh,
+            color: _hov ? c.withValues(alpha: 0.12) : AppTheme.surfaceHigh,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-                color: _hov ? c.withValues(alpha: 0.4) : AppTheme.border),
+                color: _hov ? c.withValues(alpha: 0.5) : AppTheme.border),
           ),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            widget.icon,
+            Icon(widget.icon, size: 13, color: _hov ? c : AppTheme.textMuted),
             const SizedBox(width: 5),
             Text(widget.label,
                 style: AppTheme.labelSmall.copyWith(
-                    color: _hov ? c : AppTheme.textSecondary,
-                    fontSize: 11)),
+                    color: _hov ? c : AppTheme.textSecondary, fontSize: 11)),
           ]),
         ),
       ),
     );
   }
 }
-
-// GitHub icon
-class _GitHubIcon extends StatelessWidget {
-  const _GitHubIcon();
-  @override
-  Widget build(BuildContext context) => const Icon(
-      Icons.code_rounded, size: 13, color: AppTheme.textSecondary);
-}
-
-// LinkedIn icon (styled 'in' badge)
-class _LinkedInIcon extends StatelessWidget {
-  const _LinkedInIcon();
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 13, height: 13,
-    decoration: BoxDecoration(
-      color: const Color(0xFF0A66C2),
-      borderRadius: BorderRadius.circular(3),
-    ),
-    alignment: Alignment.center,
-    child: const Text('in',
-        style: TextStyle(color: Colors.white, fontSize: 7,
-            fontWeight: FontWeight.w900)),
-  );
-}
-

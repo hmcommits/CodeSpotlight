@@ -340,13 +340,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   SliverGridDelegate _gridDelegate(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    final cols = w > 1200 ? 3 : w > 700 ? 2 : 1;
+    // subtract sidebar width when visible
+    final totalW = MediaQuery.of(context).size.width;
+    final isWide = totalW > 900;
+    final gridW = isWide ? totalW - 340 : totalW;
+    final cols = gridW > 900 ? 3 : gridW > 540 ? 2 : 1;
     return SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: cols,
       crossAxisSpacing: 14,
       mainAxisSpacing: 14,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.1,   // taller cards to fit buttons + content
     );
   }
 }
