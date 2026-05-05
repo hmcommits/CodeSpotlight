@@ -1,6 +1,5 @@
-import 'dart:math';
+﻿import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
 
 /// Animated floating bubble chart where each language is a circle
@@ -238,3 +237,4 @@ class _ConstellationPainter extends CustomPainter {
   bool shouldRepaint(_ConstellationPainter old) =>
       old.animValue != animValue || old.bubbles != bubbles;
 }
+

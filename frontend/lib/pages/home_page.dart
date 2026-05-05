@@ -8,6 +8,7 @@ import '../models/project_model.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/profile_sidebar.dart';
 import '../widgets/project_card.dart';
 
 class HomePage extends StatefulWidget {
@@ -121,9 +122,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final auth = AuthService.instance;
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: CustomScrollView(
+    final isWide = MediaQuery.of(context).size.width > 900;
+    final mainContent = CustomScrollView(
         slivers: [
           // ── App Bar ──────────────────────────────────────────────────────
           SliverAppBar(
@@ -310,7 +310,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             ),
         ],
-      ),
+    );
+
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      body: isWide
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ProfileSidebar(
+                  projects: _projects,
+                  user: auth.user,
+                  isDemo: auth.isDemo,
+                ),
+                Expanded(child: mainContent),
+              ],
+            )
+          : mainContent,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openAddSheet,
         backgroundColor: AppTheme.primary,

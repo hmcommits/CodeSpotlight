@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/project_model.dart';
 import '../theme/app_theme.dart';
 import 'heartbeat_badge.dart';
 import 'language_bar.dart';
+import 'linkedin_post_sheet.dart';
 
 class ProjectCard extends StatefulWidget {
   final Project project;
@@ -38,7 +40,7 @@ class _ProjectCardState extends State<ProjectCard> {
             decoration: BoxDecoration(
               color: AppTheme.surface,
               borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-              // All sides must be the SAME color when borderRadius is set — Flutter rule.
+              // All sides must be the SAME color when borderRadius is set â€” Flutter rule.
               // The left accent is drawn as a separate Positioned child inside the Stack.
               border: Border.all(
                 color: _hovered
@@ -62,9 +64,12 @@ class _ProjectCardState extends State<ProjectCard> {
                       ),
                     ],
             ),
-            child: Stack(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // ── Language accent bar (left edge) ────────────────────────────
+            Stack(
+              children: [
+                // â”€â”€ Language accent bar (left edge) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 // Drawn inside Stack to bypass the non-uniform border color rule
                 Positioned(
                   left: 0,
@@ -88,7 +93,7 @@ class _ProjectCardState extends State<ProjectCard> {
                   ),
                 ),
 
-                // ── Card content ───────────────────────────────────────────────
+                // â”€â”€ Card content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Padding(
                   padding: const EdgeInsets.fromLTRB(19, 14, 14, 14),
                   child: Column(
@@ -180,7 +185,7 @@ class _ProjectCardState extends State<ProjectCard> {
                             color: AppTheme.textSecondary,
                           ),
                           const Spacer(),
-                          // Video pill — shown when a demo video exists
+                          // Video pill â€” shown when a demo video exists
                           if (widget.project.videoUrl.isNotEmpty) ...[ 
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -245,12 +250,43 @@ class _ProjectCardState extends State<ProjectCard> {
                   ),
                 ),
               ],
+            ),  // closes Stack
+
+            // â”€â”€ Card action buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Row(children: [
+                Expanded(
+                  child: _CardAction(
+                    icon: const _GitHubIcon(),
+                    label: 'GitHub',
+                    onTap: () async {
+                      final url = Uri.parse(
+                          'https://github.com/${widget.project.fullName}');
+                      if (await canLaunchUrl(url)) {
+                        launchUrl(url, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _CardAction(
+                    icon: const _LinkedInIcon(),
+                    label: 'LinkedIn Post',
+                    onTap: () => showLinkedInPostSheet(context, widget.project),
+                    accent: const Color(0xFF0A66C2),
+                  ),
+                ),
+              ]),
             ),
-          ),
-        ),
-      ),
-    ),
-  );
+          ],  // closes Column children
+        ),  // closes Column
+        ),  // closes AnimatedContainer
+        ),  // closes AnimatedScale
+      ),  // closes GestureDetector
+    ),  // closes MouseRegion
+  );  // closes Hero
   }
 
   String _formatNum(int n) {
@@ -259,7 +295,7 @@ class _ProjectCardState extends State<ProjectCard> {
   }
 }
 
-// ── Stat chip ─────────────────────────────────────────────────────────────────
+// â”€â”€ Stat chip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _StatChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -284,7 +320,7 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// ── AI / pending status badge ─────────────────────────────────────────────────
+// â”€â”€ AI / pending status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _StatusBadge extends StatelessWidget {
   final String aiStatus;
   const _StatusBadge({required this.aiStatus});
@@ -344,7 +380,7 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-// ── Shimmer loading placeholder ───────────────────────────────────────────────
+// â”€â”€ Shimmer loading placeholder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class LoadingBentoCard extends StatelessWidget {
   const LoadingBentoCard({super.key});
 
@@ -389,3 +425,76 @@ class LoadingBentoCard extends StatelessWidget {
     );
   }
 }
+
+// â”€â”€ Card action button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+class _CardAction extends StatefulWidget {
+  final Widget icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? accent;
+  const _CardAction(
+      {required this.icon, required this.label,
+       required this.onTap, this.accent});
+
+  @override
+  State<_CardAction> createState() => _CardActionState();
+}
+
+class _CardActionState extends State<_CardAction> {
+  bool _hov = false;
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.accent ?? AppTheme.textSecondary;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hov = true),
+      onExit: (_) => setState(() => _hov = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: _hov ? c.withValues(alpha: 0.1) : AppTheme.surfaceHigh,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+                color: _hov ? c.withValues(alpha: 0.4) : AppTheme.border),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            widget.icon,
+            const SizedBox(width: 5),
+            Text(widget.label,
+                style: AppTheme.labelSmall.copyWith(
+                    color: _hov ? c : AppTheme.textSecondary,
+                    fontSize: 11)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// GitHub icon
+class _GitHubIcon extends StatelessWidget {
+  const _GitHubIcon();
+  @override
+  Widget build(BuildContext context) => const Icon(
+      Icons.code_rounded, size: 13, color: AppTheme.textSecondary);
+}
+
+// LinkedIn icon (styled 'in' badge)
+class _LinkedInIcon extends StatelessWidget {
+  const _LinkedInIcon();
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 13, height: 13,
+    decoration: BoxDecoration(
+      color: const Color(0xFF0A66C2),
+      borderRadius: BorderRadius.circular(3),
+    ),
+    alignment: Alignment.center,
+    child: const Text('in',
+        style: TextStyle(color: Colors.white, fontSize: 7,
+            fontWeight: FontWeight.w900)),
+  );
+}
+

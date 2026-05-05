@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/project_model.dart';
 import '../services/api_service.dart';
@@ -12,6 +13,7 @@ import '../widgets/commit_heatmap.dart';
 import '../widgets/heartbeat_badge.dart';
 import '../widgets/language_bar.dart';
 import '../widgets/language_constellation.dart';
+import '../widgets/linkedin_post_sheet.dart';
 import '../widgets/mermaid_diagram_view.dart';
 import '../widgets/video_player_view.dart';
 
@@ -97,7 +99,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           }
         }
       } catch (_) {
-        // Silently ignore poll errors â€” just keep trying
+        // Silently ignore poll errors Ã¢â‚¬â€ just keep trying
       }
     });
   }
@@ -135,7 +137,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       backgroundColor: AppTheme.background,
       body: CustomScrollView(
         slivers: [
-          // â”€â”€ App Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // Ã¢â€â‚¬Ã¢â€â‚¬ App Bar Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
           SliverAppBar(
             expandedHeight: 180,
             pinned: true,
@@ -223,7 +225,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
             ),
           ),
 
-          // â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // Ã¢â€â‚¬Ã¢â€â‚¬ Content Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
           SliverPadding(
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
@@ -244,7 +246,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         icon: Icons.fork_right_rounded,
                         label: '${_project!.forks}',
                         subtitle: 'Forks',
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.secondary,
                       ),
                       _VerticalDivider(),
                       _Stat(
@@ -253,6 +255,15 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         subtitle: 'Language',
                         color: langColor,
                       ),
+                      if (_project!.topics.isNotEmpty) ...[
+                        _VerticalDivider(),
+                        _Stat(
+                          icon: Icons.label_rounded,
+                          label: '${_project!.topics.length}',
+                          subtitle: 'Topics',
+                          color: AppTheme.primary,
+                        ),
+                      ],
                     ],
                   ),
                 ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1),
@@ -261,7 +272,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
                 // Language bar
                 if (_project!.languages.isNotEmpty) ...[
-                  _SectionLabel('Language Breakdown'),
+                  _SectionLabel('Language Breakdown', icon: Icons.pie_chart_outline_rounded),
                   _SectionCard(
                     child: LanguageBar(languages: _project!.languages),
                   ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1),
@@ -270,7 +281,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
                 // Description
                 if (_project!.description.isNotEmpty) ...[
-                  _SectionLabel('About'),
+                  _SectionLabel('About', icon: Icons.info_outline_rounded),
                   _SectionCard(
                     child: Text(_project!.description, style: AppTheme.bodyMedium),
                   ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
@@ -279,7 +290,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
                 // Demo Video (YouTube / Loom / direct MP4)
                 if (_project!.videoUrl.isNotEmpty) ...[
-                  _SectionLabel('Demo Video'),
+                  _SectionLabel('Demo Video', icon: Icons.play_circle_outline_rounded),
                   _SectionCard(
                     child: VideoPlayerView(videoUrl: _project!.videoUrl),
                   ).animate().fadeIn(delay: 220.ms).slideY(begin: 0.1),
@@ -288,7 +299,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
 
                 // Tech stack
                 if (_project!.techStack.isNotEmpty) ...[
-                  _SectionLabel('Tech Stack'),
+                  _SectionLabel('Tech Stack', icon: Icons.layers_rounded),
                   _SectionCard(
                     child: Wrap(
                       spacing: 8,
@@ -315,17 +326,17 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                   const SizedBox(height: 16),
                 ],
 
-                // AI Summary â€” live polling
-                _SectionLabel('Technical Deep Dive'),
+                // AI Summary Ã¢â‚¬â€ live polling
+                _SectionLabel('Technical Deep Dive', icon: Icons.auto_awesome_rounded),
                 _SectionCard(
                   child: _buildAiSection(),
                 ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
                 const SizedBox(height: 16),
 
-                // Architecture Diagram â€” Mermaid.js
+                // Architecture Diagram Ã¢â‚¬â€ Mermaid.js
                 Row(
                   children: [
-                    Expanded(child: _SectionLabel('Architecture Diagram')),
+                    Expanded(child: _SectionLabel('Architecture Diagram', icon: Icons.account_tree_outlined)),
                     if (_project!.aiStatus == 'done')
                       TextButton.icon(
                         onPressed: _regenerating ? null : _regenDiagram,
@@ -335,7 +346,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                                 child: CircularProgressIndicator(
                                     strokeWidth: 1.5, color: AppTheme.primary))
                             : const Icon(Icons.refresh, size: 14),
-                        label: Text(_regenerating ? 'Regeneratingâ€¦' : 'Regenerate'),
+                        label: Text(_regenerating ? 'RegeneratingÃ¢â‚¬Â¦' : 'Regenerate'),
                         style: TextButton.styleFrom(
                           foregroundColor: AppTheme.primary,
                           textStyle: const TextStyle(fontSize: 12),
@@ -362,7 +373,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 const SizedBox(height: 16),
 
                 // Language Constellation
-                _SectionLabel('Language Constellation'),
+                _SectionLabel('Language Constellation', icon: Icons.bubble_chart_rounded),
                 _SectionCard(
                   child: _project!.languages.isNotEmpty
                       ? LanguageConstellation(languages: _project!.languages)
@@ -373,8 +384,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 ).animate().fadeIn(delay: 380.ms).slideY(begin: 0.1),
                 const SizedBox(height: 16),
 
-                // Commit Heatmap â€” Proof of Effort
-                _SectionLabel('Proof of Effort'),
+                // Commit Heatmap Ã¢â‚¬â€ Proof of Effort
+                _SectionLabel('Proof of Effort', icon: Icons.local_fire_department_rounded),
                 _SectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,7 +394,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         Icon(Icons.local_fire_department_rounded,
                             size: 14, color: AppTheme.primary),
                         const SizedBox(width: 5),
-                        Text('Commit Activity â€” past 12 months',
+                        Text('Commit Activity Ã¢â‚¬â€ past 12 months',
                             style: AppTheme.labelSmall
                                 .copyWith(color: AppTheme.primary)),
                       ]),
@@ -404,33 +415,37 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _launch(
-                          'https://github.com/${_project!.fullName}',
-                        ),
-                        icon: const Icon(Icons.open_in_new, size: 16),
-                        label: const Text('View on GitHub'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.textPrimary,
-                          side: const BorderSide(color: AppTheme.border),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
+                      child: _DetailActionButton(
+                        icon: Icons.code_rounded,
+                        label: 'View on GitHub',
+                        onTap: () => _launch(
+                            'https://github.com/${_project!.fullName}'),
+                        outlined: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _DetailActionButton(
+                        icon: Icons.share_rounded,
+                        label: 'LinkedIn Post',
+                        color: const Color(0xFF0A66C2),
+                        onTap: () => showLinkedInPostSheet(
+                            context, _project!),
                       ),
                     ),
                     if (_project!.liveUrl.isNotEmpty) ...[
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _launch(_project!.liveUrl),
-                          icon: const Icon(Icons.rocket_launch_rounded,
-                              size: 16),
-                          label: const Text('Visit Live Site'),
+                        child: _DetailActionButton(
+                          icon: Icons.rocket_launch_rounded,
+                          label: 'Live Site',
+                          onTap: () => _launch(_project!.liveUrl),
                         ),
                       ),
                     ],
                   ],
                 ).animate().fadeIn(delay: 450.ms),
-                const SizedBox(height: 32),
+                const SizedBox(height: 40),
               ]),
             ),
           ),
@@ -511,17 +526,29 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }
 }
 
-// â”€â”€ Helper widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Helper widgets Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 class _SectionLabel extends StatelessWidget {
   final String label;
-  const _SectionLabel(this.label);
+  final IconData? icon;
+  const _SectionLabel(this.label, {this.icon});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(label, style: AppTheme.titleMedium),
+      padding: const EdgeInsets.only(bottom: 10, top: 4),
+      child: Row(children: [
+        if (icon != null) ...[
+          Icon(icon, size: 15, color: AppTheme.primary),
+          const SizedBox(width: 8),
+        ],
+        Text(label,
+            style: GoogleFonts.spaceGrotesk(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.2)),
+      ]),
     );
   }
 }
@@ -534,11 +561,18 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusCard),
         border: Border.all(color: AppTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: child,
     );
@@ -563,11 +597,24 @@ class _Stat extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(height: 6),
         Text(label,
-            style: AppTheme.titleMedium.copyWith(color: color), maxLines: 1),
-        Text(subtitle, style: AppTheme.bodySmall),
+            style: GoogleFonts.spaceGrotesk(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis),
+        Text(subtitle,
+            style: AppTheme.bodySmall.copyWith(fontSize: 11)),
       ],
     );
   }
@@ -580,4 +627,70 @@ class _VerticalDivider extends StatelessWidget {
   }
 }
 
+// ── Detail page action button ─────────────────────────────────────────────────
+class _DetailActionButton extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool outlined;
+  final Color? color;
+  const _DetailActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.outlined = false,
+    this.color,
+  });
+
+  @override
+  State<_DetailActionButton> createState() => _DetailActionButtonState();
+}
+
+class _DetailActionButtonState extends State<_DetailActionButton> {
+  bool _hov = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.color ?? AppTheme.primary;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hov = true),
+      onExit: (_) => setState(() => _hov = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            gradient: widget.outlined ? null
+                : LinearGradient(colors: [c, c.withValues(alpha: 0.75)]),
+            color: widget.outlined
+                ? (_hov ? c.withValues(alpha: 0.08) : Colors.transparent)
+                : null,
+            borderRadius: BorderRadius.circular(12),
+            border: widget.outlined
+                ? Border.all(color: _hov ? c : AppTheme.border, width: 1.5)
+                : null,
+            boxShadow: !widget.outlined && _hov
+                ? [BoxShadow(color: c.withValues(alpha: 0.35), blurRadius: 16)]
+                : [],
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(widget.icon, size: 15,
+                color: widget.outlined
+                    ? (_hov ? c : AppTheme.textSecondary)
+                    : Colors.white),
+            const SizedBox(width: 7),
+            Text(widget.label,
+                style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: widget.outlined
+                        ? (_hov ? c : AppTheme.textSecondary)
+                        : Colors.white)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
 

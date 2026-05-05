@@ -1,5 +1,4 @@
-import 'dart:math';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -65,7 +64,7 @@ class _LandingPageState extends State<LandingPage>
   }
 }
 
-// ── Animated orb background ───────────────────────────────────────────────────
+// â”€â”€ Animated orb background â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _AnimatedOrbs extends StatelessWidget {
   final AnimationController controller;
   const _AnimatedOrbs({required this.controller});
@@ -109,7 +108,7 @@ class _AnimatedOrbs extends StatelessWidget {
       );
 }
 
-// ── Navbar ────────────────────────────────────────────────────────────────────
+// â”€â”€ Navbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _Navbar extends StatelessWidget {
   final VoidCallback onDemo;
   const _Navbar({required this.onDemo});
@@ -149,7 +148,7 @@ class _Navbar extends StatelessWidget {
   }
 }
 
-// ── Hero (wide) ───────────────────────────────────────────────────────────────
+// â”€â”€ Hero (wide) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _HeroWide extends StatelessWidget {
   final VoidCallback onDemo;
   const _HeroWide({required this.onDemo});
@@ -274,7 +273,7 @@ class _Stat extends StatelessWidget {
   );
 }
 
-// ── Mock Project Card (hero decoration) ──────────────────────────────────────
+// â”€â”€ Mock Project Card (hero decoration) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _MockCard extends StatefulWidget {
   @override
   State<_MockCard> createState() => _MockCardState();
@@ -392,7 +391,7 @@ class _MockBar extends StatelessWidget {
   }
 }
 
-// ── Features Section ──────────────────────────────────────────────────────────
+// â”€â”€ Features Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _FeaturesSection extends StatelessWidget {
   const _FeaturesSection();
 
@@ -402,7 +401,7 @@ class _FeaturesSection extends StatelessWidget {
     (Icons.account_tree_rounded, 'Architecture Diagram',
         'Auto-generated Mermaid.js flowcharts visualize components, data flow, and system interactions.'),
     (Icons.grid_on_rounded, 'Commit Heatmap',
-        'A real 52-week × 7-day contribution grid pulled live from GitHub shows proof of consistent effort.'),
+        'A real 52-week Ã— 7-day contribution grid pulled live from GitHub shows proof of consistent effort.'),
     (Icons.bolt_rounded, 'Live Status Monitor',
         'Heartbeat checks ping your deployed URL and show a real-time live/down badge on every card.'),
   ];
@@ -496,7 +495,7 @@ class _FeatureCardState extends State<_FeatureCard> {
   }
 }
 
-// ── How It Works ──────────────────────────────────────────────────────────────
+// â”€â”€ How It Works â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _HowItWorksSection extends StatelessWidget {
   const _HowItWorksSection();
 
@@ -593,7 +592,7 @@ class _StepCard extends StatelessWidget {
   }
 }
 
-// ── Bottom CTA ────────────────────────────────────────────────────────────────
+// â”€â”€ Bottom CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _CtaSection extends StatelessWidget {
   final VoidCallback onDemo;
   const _CtaSection({required this.onDemo});
@@ -627,7 +626,7 @@ class _CtaSection extends StatelessWidget {
   }
 }
 
-// ── Footer ────────────────────────────────────────────────────────────────────
+// â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _Footer extends StatelessWidget {
   const _Footer();
   @override
@@ -645,14 +644,14 @@ class _Footer extends StatelessWidget {
                   color: Colors.white)),
         ),
         const Spacer(),
-        Text('© 2026 — Built with Flutter & Gemini AI',
+        Text('Â© 2026 â€” Built with Flutter & Gemini AI',
             style: AppTheme.bodySmall),
       ]),
     );
   }
 }
 
-// ── Shared button widgets ─────────────────────────────────────────────────────
+// â”€â”€ Shared button widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _GradientButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
@@ -739,3 +738,4 @@ class _OutlineButtonState extends State<_OutlineButton> {
     );
   }
 }
+
