@@ -55,8 +55,29 @@ router.post('/login', async (req, res, next) => {
 });
 
 // ─── GET /api/auth/me ─────────────────────────────────────────────────────────
-router.get('/me', authenticate, (req, res) => {
-  res.json({ user: req.user });
+router.get('/me', authenticate, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId).select('-password');
+    res.json({ user });
+  } catch (err) { next(err); }
+});
+
+// ─── PATCH /api/auth/me ───────────────────────────────────────────────────────
+router.patch('/me', authenticate, async (req, res, next) => {
+  try {
+    const { name, socialLinks } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (socialLinks !== undefined) updateData.socialLinks = socialLinks;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { $set: updateData },
+      { new: true }
+    ).select('-password');
+    
+    res.json({ user });
+  } catch (err) { next(err); }
 });
 
 // ─── GET /api/auth/profile/:userId ───────────────────────────────────────────
@@ -64,7 +85,7 @@ router.get('/me', authenticate, (req, res) => {
 router.get('/profile/:userId', async (req, res, next) => {
   try {
     const user = await User.findById(req.params.userId)
-      .select('name email createdAt');
+      .select('name email createdAt socialLinks');
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const projects = await Project.find({
@@ -80,6 +101,7 @@ router.get('/profile/:userId', async (req, res, next) => {
         name: user.name || user.email.split('@')[0],
         email: user.email,
         memberSince: user.createdAt,
+        socialLinks: user.socialLinks || {},
       },
       projects,
       stats: {

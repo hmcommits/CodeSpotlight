@@ -41,6 +41,18 @@ final appRouter = GoRouter(
         userId: state.pathParameters['userId']!,
       ),
     ),
+    GoRoute(
+      path: '/project/:id',
+      builder: (context, state) {
+        final extra = state.extra;
+        final project = extra is Project ? extra : null;
+        final id = state.pathParameters['id']!;
+        return ProjectDetailPage(
+          project: project,
+          projectId: id,
+        );
+      },
+    ),
     // ── Authenticated routes ─────────────────────────────────────────────────
     GoRoute(
       path: '/app',

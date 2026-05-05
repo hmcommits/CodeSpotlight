@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/project_model.dart';
+import '../models/user_model.dart';
 import 'auth_service.dart';
 
 class ApiService {
@@ -202,6 +204,25 @@ class ApiService {
       };
     }
     throw Exception('Profile not found');
+  }
+
+  // ── PATCH /api/auth/me ───────────────────────────────────────────────────────
+  static Future<AppUser> updateUser({String? name, Map<String, String>? socialLinks}) async {
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (socialLinks != null) body['socialLinks'] = socialLinks;
+
+    final res = await http.patch(
+      Uri.parse('$baseUrl/auth/me'),
+      headers: _headers,
+      body: jsonEncode(body),
+    ).timeout(_timeout);
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      return AppUser.fromJson(data['user'] as Map<String, dynamic>);
+    }
+    throw Exception('Failed to update profile');
   }
 
   // ── GET /api/health ─────────────────────────────────────────────────────────

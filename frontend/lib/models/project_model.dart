@@ -18,6 +18,7 @@ class Project {
   final String heartbeatStatus; // "live" | "down" | "unknown"
   final DateTime? lastHeartbeatCheck;
   final DateTime createdAt;
+  final String userId;
 
   const Project({
     required this.id,
@@ -39,6 +40,7 @@ class Project {
     required this.heartbeatStatus,
     this.lastHeartbeatCheck,
     required this.createdAt,
+    required this.userId,
   });
 
   factory Project.fromJson(Map<String, dynamic> json) {
@@ -66,6 +68,7 @@ class Project {
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
+      userId: json['userId'] ?? '',
     );
   }
 
@@ -111,6 +114,7 @@ class Project {
     String? aiSummary,
     String? mermaidDiagram,
     DateTime? lastHeartbeatCheck,
+    String? userId,
   }) {
     return Project(
       id: id,
@@ -132,6 +136,7 @@ class Project {
       heartbeatStatus: heartbeatStatus ?? this.heartbeatStatus,
       lastHeartbeatCheck: lastHeartbeatCheck ?? this.lastHeartbeatCheck,
       createdAt: createdAt,
+      userId: userId ?? this.userId,
     );
   }
 }

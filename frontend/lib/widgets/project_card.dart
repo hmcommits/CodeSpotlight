@@ -144,7 +144,7 @@ class _ProjectCardState extends State<ProjectCard> {
                         const SizedBox(height: 10),
 
                         // Description
-                        Expanded(
+                        Flexible(
                           child: Text(
                             p.description.isNotEmpty
                                 ? p.description

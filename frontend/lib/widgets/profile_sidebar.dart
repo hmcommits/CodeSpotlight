@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/project_model.dart';
 import '../models/user_model.dart';
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 
 class ProfileSidebar extends StatelessWidget {
@@ -112,7 +116,13 @@ class ProfileSidebar extends StatelessWidget {
                 ),
               ],
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
+              // ── Social Links ──────────────────────────────────────────────
+              if (user != null && !isDemo) ...[
+                _SocialLinksRow(user: user!),
+                const SizedBox(height: 16),
+              ],
 
               // ── Share link ───────────────────────────────────────────────
               if (!isDemo && user != null) ...[
@@ -257,6 +267,145 @@ class _ShareProfileButton extends StatelessWidget {
                   color: AppTheme.primary,
                   fontWeight: FontWeight.w600)),
         ]),
+      ),
+    );
+  }
+}
+
+// ── Social Links Row ──────────────────────────────────────────────────────────
+class _SocialLinksRow extends StatefulWidget {
+  final AppUser user;
+  const _SocialLinksRow({required this.user});
+  @override
+  State<_SocialLinksRow> createState() => _SocialLinksRowState();
+}
+
+class _SocialLinksRowState extends State<_SocialLinksRow> {
+  Future<void> _launch(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _editLinks() async {
+    final links = widget.user.socialLinks;
+    final ghCtrl = TextEditingController(text: links['github'] ?? '');
+    final inCtrl = TextEditingController(text: links['linkedin'] ?? '');
+    final twCtrl = TextEditingController(text: links['twitter'] ?? '');
+    final ptCtrl = TextEditingController(text: links['portfolio'] ?? '');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: Text('Edit Social Links', style: AppTheme.titleMedium),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _LinkField(ctrl: ghCtrl, label: 'GitHub URL', icon: FontAwesomeIcons.github),
+              const SizedBox(height: 12),
+              _LinkField(ctrl: inCtrl, label: 'LinkedIn URL', icon: FontAwesomeIcons.linkedin),
+              const SizedBox(height: 12),
+              _LinkField(ctrl: twCtrl, label: 'Twitter/X URL', icon: FontAwesomeIcons.twitter),
+              const SizedBox(height: 12),
+              _LinkField(ctrl: ptCtrl, label: 'Portfolio URL', icon: Icons.language),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true) {
+      try {
+        final updated = await ApiService.updateUser(socialLinks: {
+          'github': ghCtrl.text.trim(),
+          'linkedin': inCtrl.text.trim(),
+          'twitter': twCtrl.text.trim(),
+          'portfolio': ptCtrl.text.trim(),
+        });
+        await AuthService.instance.updateUser(updated);
+        // Force rebuild or let listeners handle it
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final links = widget.user.socialLinks;
+    final hasLinks = links.values.any((v) => v.isNotEmpty);
+    // Only the logged in user can edit their own links
+    final isMe = AuthService.instance.user?.id == widget.user.id;
+
+    if (!hasLinks && !isMe) return const SizedBox();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (links['github']?.isNotEmpty == true)
+          _SocialBtn(icon: FontAwesomeIcons.github, onTap: () => _launch(links['github']!)),
+        if (links['linkedin']?.isNotEmpty == true)
+          _SocialBtn(icon: FontAwesomeIcons.linkedin, onTap: () => _launch(links['linkedin']!)),
+        if (links['twitter']?.isNotEmpty == true)
+          _SocialBtn(icon: FontAwesomeIcons.twitter, onTap: () => _launch(links['twitter']!)),
+        if (links['portfolio']?.isNotEmpty == true)
+          _SocialBtn(icon: Icons.language, onTap: () => _launch(links['portfolio']!)),
+        if (isMe)
+          IconButton(
+            icon: Icon(hasLinks ? Icons.edit_rounded : Icons.add_link_rounded, size: 18),
+            color: AppTheme.primary,
+            tooltip: 'Edit Links',
+            onPressed: _editLinks,
+          ),
+      ],
+    );
+  }
+}
+
+class _SocialBtn extends StatelessWidget {
+  final dynamic icon;
+  final VoidCallback onTap;
+  const _SocialBtn({required this.icon, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: icon is IconData ? Icon(icon as IconData, size: 18) : FaIcon(icon, size: 18),
+      color: AppTheme.textSecondary,
+      onPressed: onTap,
+      hoverColor: AppTheme.primary.withValues(alpha: 0.1),
+    );
+  }
+}
+
+class _LinkField extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String label;
+  final dynamic icon;
+  const _LinkField({required this.ctrl, required this.label, required this.icon});
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: ctrl,
+      style: AppTheme.bodyMedium.copyWith(color: AppTheme.textPrimary),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: icon is IconData ? Icon(icon as IconData, size: 16) : FaIcon(icon, size: 16),
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -450,7 +451,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 const SizedBox(height: 16),
 
                 // ── Management buttons (owner only) ────────────────────────
-                if (!AuthService.instance.isDemo)
+                if (AuthService.instance.user?.id == _project!.userId)
                   Row(
                     children: [
                       Expanded(
@@ -669,75 +670,117 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
               if (ctx.mounted) setS(() { err = e.toString(); loading = false; });
             });
           }
-          return DraggableScrollableSheet(
-            initialChildSize: 0.85,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            expand: false,
-            builder: (_, ctrl) => Column(
-              children: [
-                const SizedBox(height: 12),
-                Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(
-                    color: AppTheme.border,
-                    borderRadius: BorderRadius.circular(2),
+          return DefaultTabController(
+            length: 2,
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.85,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (_, ctrl) => Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(
+                      color: AppTheme.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.auto_awesome_rounded,
-                          color: AppTheme.accent, size: 20),
-                      const SizedBox(width: 10),
-                      Text('AI-Generated README',
-                          style: AppTheme.titleMedium),
-                      const Spacer(),
-                      if (readme != null)
-                        IconButton(
-                          icon: const Icon(Icons.copy_rounded, size: 18),
-                          tooltip: 'Copy README',
-                          onPressed: () {
-                            Clipboard.setData(
-                                ClipboardData(text: readme!));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('README copied to clipboard!'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                        ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.auto_awesome_rounded,
+                            color: AppTheme.accent, size: 20),
+                        const SizedBox(width: 10),
+                        Text('AI-Generated README',
+                            style: AppTheme.titleMedium),
+                        const Spacer(),
+                        if (readme != null)
+                          IconButton(
+                            icon: const Icon(Icons.copy_rounded, size: 18),
+                            tooltip: 'Copy README',
+                            onPressed: () {
+                              Clipboard.setData(
+                                  ClipboardData(text: readme!));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('README copied to clipboard!'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: loading
-                      ? const Center(
-                          child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            CircularProgressIndicator(color: AppTheme.primary),
-                            SizedBox(height: 16),
-                            Text('Generating README with Gemini AI...'),
-                          ]),
-                        )
-                      : err != null
-                          ? Center(child: Text('Error: $err',
-                              style: AppTheme.bodySmall))
-                          : SingleChildScrollView(
-                              controller: ctrl,
-                              padding: const EdgeInsets.all(20),
-                              child: SelectableText(
-                                readme ?? '',
-                                style: GoogleFonts.firaCode(
-                                    fontSize: 12,
-                                    color: AppTheme.textSecondary,
-                                    height: 1.6),
+                  if (readme != null && !loading && err == null)
+                    const TabBar(
+                      indicatorColor: AppTheme.primary,
+                      labelColor: AppTheme.primary,
+                      unselectedLabelColor: AppTheme.textSecondary,
+                      tabs: [
+                        Tab(text: 'Preview'),
+                        Tab(text: 'Code'),
+                      ],
+                    ),
+                  if (readme == null || loading || err != null)
+                    const Divider(height: 1),
+                  Expanded(
+                    child: loading
+                        ? const Center(
+                            child: Column(mainAxisSize: MainAxisSize.min, children: [
+                              CircularProgressIndicator(color: AppTheme.primary),
+                              SizedBox(height: 16),
+                              Text('Generating README with Gemini AI...'),
+                            ]),
+                          )
+                        : err != null
+                            ? Center(child: Text('Error: $err',
+                                style: AppTheme.bodySmall))
+                            : TabBarView(
+                                children: [
+                                  // Preview Tab
+                                  Markdown(
+                                    controller: ctrl,
+                                    data: readme ?? '',
+                                    selectable: true,
+                                    styleSheet: MarkdownStyleSheet(
+                                      p: AppTheme.bodyMedium,
+                                      h1: AppTheme.displayLarge,
+                                      h2: AppTheme.titleLarge,
+                                      h3: AppTheme.titleMedium,
+                                      code: GoogleFonts.firaCode(
+                                          fontSize: 13,
+                                          backgroundColor: AppTheme.surfaceHigh,
+                                          color: AppTheme.textPrimary),
+                                      codeblockDecoration: BoxDecoration(
+                                        color: AppTheme.surfaceHigh,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    onTapLink: (text, href, title) {
+                                      if (href != null) _launch(href);
+                                    },
+                                  ),
+                                  // Code Tab
+                                  SingleChildScrollView(
+                                    controller: ctrl,
+                                    padding: const EdgeInsets.all(20),
+                                    child: SelectableText(
+                                      readme ?? '',
+                                      style: GoogleFonts.firaCode(
+                                          fontSize: 12,
+                                          color: AppTheme.textSecondary,
+                                          height: 1.6),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           );
         },

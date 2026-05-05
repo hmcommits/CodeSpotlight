@@ -123,6 +123,14 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Update User ───────────────────────────────────────────────────────────
+  Future<void> updateUser(AppUser newUser) async {
+    _user = newUser;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_user', newUser.toJsonString());
+    notifyListeners();
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   String _generateUuid() {
     final rng = Random.secure();

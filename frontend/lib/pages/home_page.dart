@@ -162,6 +162,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   color: Colors.white)),
                         ),
                         const Spacer(),
+                        // Discover button
+                        TextButton.icon(
+                          onPressed: () => context.go('/discover'),
+                          icon: const Icon(Icons.explore_rounded, size: 18),
+                          label: const Text('Discover'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         // Demo badge or user chip
                         if (auth.isDemo)
                           _DemoBadge(onExit: _logout)
