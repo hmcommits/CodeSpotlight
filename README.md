@@ -16,8 +16,6 @@
 <br>
 **Watch Demo:** https://youtu.be/BZO2LhEN5AU
 
-> **🚨 FOR HACKATHON JUDGES:** You do **not** need to create an account to test the platform! Simply click the **"Try Demo"** button on the landing page to enter a secure, temporary sandbox session where you can generate AI case studies immediately.
-
 </div>
 
 ---
@@ -67,6 +65,8 @@ This project is fully deployed and accessible live for the hackathon judging pro
 - **Live URL:** https://codespotlight-hm.web.app
 
 ---
+
+> **🚨 FOR HACKATHON JUDGES:** You do **not** need to create an account to test the platform! Simply click the **"Try Demo"** button on the landing page to enter a secure, temporary sandbox session where you can generate AI case studies immediately.
 
 ## 🚀 Getting Started
 
