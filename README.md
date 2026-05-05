@@ -76,7 +76,7 @@ Follow these instructions to set up the project locally.
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (3.x with Web target enabled)
 - A [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register) cluster URI
 - A Google [Gemini API Key](https://aistudio.google.com/)
-- A [GitHub Personal Access Token (PAT)](https://github.com/settings/tokens)
+- A GitHub Personal Access Token (PAT)
 
 ### 1. Backend Setup
 
