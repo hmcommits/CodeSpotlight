@@ -131,4 +131,38 @@ async function generateProjectAnalysis(repoContext) {
   }
 }
 
-module.exports = { generateProjectAnalysis };
+/**
+ * Generate a professional GitHub README for a project.
+ */
+async function generateReadme(ctx) {
+  const langList = Object.keys(ctx.languages || {}).join(', ') || ctx.primaryLanguage;
+  const prompt = `You are a senior developer writing a professional GitHub README.
+
+Generate a complete, beautiful, well-structured GitHub README.md for the following project.
+
+Project details:
+- Name: ${ctx.fullName}
+- Description: ${ctx.description || 'A software project'}
+- Primary Language: ${ctx.primaryLanguage}
+- Languages: ${langList}
+- Tech Stack: ${(ctx.techStack || []).join(', ') || 'N/A'}
+- Topics: ${(ctx.topics || []).join(', ') || 'none'}
+- Live URL: ${ctx.liveUrl || 'N/A'}
+- AI Summary: ${ctx.aiSummary ? ctx.aiSummary.slice(0, 600) : 'Not available'}
+
+Requirements:
+1. Start with a centered project title and a one-line description
+2. Include shields.io badges for the primary language and tech stack
+3. Include sections: Features, Tech Stack, Getting Started (with install steps), Usage, Contributing, License
+4. Use emojis tastefully for section headers
+5. Include a "Live Demo" section if liveUrl is provided
+6. Make it impressive and professional — this is a portfolio showcase
+7. Return ONLY the raw markdown, no explanation before or after
+
+Return only the README markdown content.`;
+
+  const result = await model.generateContent(prompt);
+  return result.response.text().trim();
+}
+
+module.exports = { generateProjectAnalysis, generateReadme };

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/project_model.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ai_analysis_card.dart';
 import '../widgets/commit_heatmap.dart';
@@ -445,6 +446,41 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     ],
                   ],
                 ).animate().fadeIn(delay: 450.ms),
+
+                const SizedBox(height: 16),
+
+                // ── Management buttons (owner only) ────────────────────────
+                if (!AuthService.instance.isDemo)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ManageBtn(
+                          icon: Icons.auto_awesome_rounded,
+                          label: 'Generate README',
+                          color: AppTheme.accent,
+                          onTap: _showReadmeModal,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ManageBtn(
+                          icon: Icons.edit_rounded,
+                          label: 'Edit',
+                          color: AppTheme.primary,
+                          onTap: _editProject,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _ManageBtn(
+                        icon: Icons.delete_outline_rounded,
+                        label: '',
+                        color: AppTheme.error,
+                        onTap: _deleteProject,
+                        iconOnly: true,
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 480.ms),
+
                 const SizedBox(height: 40),
               ]),
             ),
@@ -499,6 +535,214 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     if (uri != null && await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  // ── Delete project ────────────────────────────────────────────────────────
+  Future<void> _deleteProject() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: Text('Delete Project', style: AppTheme.titleMedium),
+        content: Text(
+          'Are you sure you want to remove "${_project!.repo}" from your portfolio? This cannot be undone.',
+          style: AppTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ApiService.deleteProject(_project!.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Project deleted'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go('/app');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Delete failed: $e')),
+        );
+      }
+    }
+  }
+
+  // ── Edit project (liveUrl + videoUrl) ─────────────────────────────────────
+  Future<void> _editProject() async {
+    final liveCtrl  = TextEditingController(text: _project!.liveUrl);
+    final videoCtrl = TextEditingController(text: _project!.videoUrl);
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: Text('Edit Project', style: AppTheme.titleMedium),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: liveCtrl,
+              style: AppTheme.bodyMedium.copyWith(color: AppTheme.textPrimary),
+              decoration: const InputDecoration(
+                labelText: 'Live URL',
+                prefixIcon: Icon(Icons.public_rounded, size: 16),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: videoCtrl,
+              style: AppTheme.bodyMedium.copyWith(color: AppTheme.textPrimary),
+              decoration: const InputDecoration(
+                labelText: 'Demo Video URL',
+                prefixIcon: Icon(Icons.play_circle_outline, size: 16),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    liveCtrl.dispose();
+    videoCtrl.dispose();
+    if (saved != true || !mounted) return;
+    try {
+      final updated = await ApiService.editProject(
+        _project!.id,
+        liveUrl:  liveCtrl.text.trim(),
+        videoUrl: videoCtrl.text.trim(),
+      );
+      if (mounted) setState(() => _project = updated);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Update failed: $e')),
+        );
+      }
+    }
+  }
+
+  // ── AI README modal ───────────────────────────────────────────────────────
+  Future<void> _showReadmeModal() async {
+    String? readme;
+    bool loading = true;
+    String? err;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          if (loading) {
+            ApiService.generateReadme(_project!.id).then((r) {
+              if (ctx.mounted) setS(() { readme = r; loading = false; });
+            }).catchError((e) {
+              if (ctx.mounted) setS(() { err = e.toString(); loading = false; });
+            });
+          }
+          return DraggableScrollableSheet(
+            initialChildSize: 0.85,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (_, ctrl) => Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.auto_awesome_rounded,
+                          color: AppTheme.accent, size: 20),
+                      const SizedBox(width: 10),
+                      Text('AI-Generated README',
+                          style: AppTheme.titleMedium),
+                      const Spacer(),
+                      if (readme != null)
+                        IconButton(
+                          icon: const Icon(Icons.copy_rounded, size: 18),
+                          tooltip: 'Copy README',
+                          onPressed: () {
+                            Clipboard.setData(
+                                ClipboardData(text: readme!));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('README copied to clipboard!'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: loading
+                      ? const Center(
+                          child: Column(mainAxisSize: MainAxisSize.min, children: [
+                            CircularProgressIndicator(color: AppTheme.primary),
+                            SizedBox(height: 16),
+                            Text('Generating README with Gemini AI...'),
+                          ]),
+                        )
+                      : err != null
+                          ? Center(child: Text('Error: $err',
+                              style: AppTheme.bodySmall))
+                          : SingleChildScrollView(
+                              controller: ctrl,
+                              padding: const EdgeInsets.all(20),
+                              child: SelectableText(
+                                readme ?? '',
+                                style: GoogleFonts.firaCode(
+                                    fontSize: 12,
+                                    color: AppTheme.textSecondary,
+                                    height: 1.6),
+                              ),
+                            ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   /// Triggers a full re-analysis (new Gemini call) and polls until done.
@@ -624,6 +868,72 @@ class _VerticalDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(width: 1, height: 40, color: AppTheme.border);
+  }
+}
+
+// ── Manage Button ───────────────────────────────────────────────────────────────
+class _ManageBtn extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color color;
+  final bool iconOnly;
+
+  const _ManageBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.color,
+    this.iconOnly = false,
+  });
+
+  @override
+  State<_ManageBtn> createState() => _ManageBtnState();
+}
+
+class _ManageBtnState extends State<_ManageBtn> {
+  bool _hov = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hov = true),
+      onExit: (_) => setState(() => _hov = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(
+            vertical: 14,
+            horizontal: widget.iconOnly ? 14 : 0,
+          ),
+          decoration: BoxDecoration(
+            color: _hov ? widget.color.withValues(alpha: 0.12) : widget.color.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _hov ? widget.color.withValues(alpha: 0.5) : widget.color.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(widget.icon, size: 16, color: widget.color),
+              if (!widget.iconOnly) ...[
+                const SizedBox(width: 6),
+                Text(
+                  widget.label,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: widget.color,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

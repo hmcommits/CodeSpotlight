@@ -2,6 +2,7 @@ const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const User     = require('../models/User');
+const Project  = require('../models/Project');
 const { JWT_SECRET, authenticate } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -56,6 +57,40 @@ router.post('/login', async (req, res, next) => {
 // ─── GET /api/auth/me ─────────────────────────────────────────────────────────
 router.get('/me', authenticate, (req, res) => {
   res.json({ user: req.user });
+});
+
+// ─── GET /api/auth/profile/:userId ───────────────────────────────────────────
+// Public — returns user display info + their projects for portfolio sharing
+router.get('/profile/:userId', async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.userId)
+      .select('name email createdAt');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const projects = await Project.find({
+      userId: req.params.userId,
+      isDemo: false,
+    })
+      .sort({ createdAt: -1 })
+      .select('-fileTree -readmeContent');
+
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name || user.email.split('@')[0],
+        email: user.email,
+        memberSince: user.createdAt,
+      },
+      projects,
+      stats: {
+        totalRepos: projects.length,
+        totalStars: projects.reduce((s, p) => s + p.stars, 0),
+        totalForks: projects.reduce((s, p) => s + p.forks, 0),
+        liveDeployments: projects.filter(p => p.liveUrl).length,
+        aiAnalyzed: projects.filter(p => p.aiStatus === 'done').length,
+      },
+    });
+  } catch (err) { next(err); }
 });
 
 module.exports = router;

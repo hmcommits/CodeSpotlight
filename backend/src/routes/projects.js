@@ -2,7 +2,7 @@ const express = require('express');
 const axios   = require('axios');
 const Project = require('../models/Project');
 const { validateGitHubUrl, extractAllRepoData } = require('../services/githubService');
-const { generateProjectAnalysis }               = require('../services/geminiService');
+const { generateProjectAnalysis, generateReadme } = require('../services/geminiService');
 const { optionalAuth, authenticate }            = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -222,6 +222,99 @@ router.delete('/demo/:sessionId', async (req, res, next) => {
   try {
     const result = await Project.deleteMany({ demoSessionId: req.params.sessionId, isDemo: true });
     res.json({ deleted: result.deletedCount });
+  } catch (err) { next(err); }
+});
+
+// ─── GET /api/projects/public ─────────────────────────────────────────────────
+// Public discovery feed — no auth required
+router.get('/public', async (req, res, next) => {
+  try {
+    const { stack, language, sort = 'newest', limit = 30, page = 1 } = req.query;
+    const filter = { isDemo: false };
+    if (stack)    filter.techStack       = { $in: [stack] };
+    if (language) filter.primaryLanguage = { $regex: language, $options: 'i' };
+
+    const sortMap = {
+      newest: { createdAt: -1 },
+      stars:  { stars: -1 },
+      forks:  { forks: -1 },
+    };
+    const sortQuery = sortMap[sort] || sortMap.newest;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [projects, total] = await Promise.all([
+      Project.find(filter)
+        .sort(sortQuery)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .select('-fileTree -readmeContent -aiSummary'),
+      Project.countDocuments(filter),
+    ]);
+
+    res.json({ total, page: parseInt(page), projects });
+  } catch (err) { next(err); }
+});
+
+// ─── DELETE /api/projects/:id ─────────────────────────────────────────────────
+router.delete('/:id', optionalAuth, async (req, res, next) => {
+  try {
+    if (!req.user && !req.demoSessionId)
+      return res.status(401).json({ error: 'Not authenticated' });
+
+    const filter = scopeFilter(req);
+    const project = await Project.findOne({ _id: req.params.id, ...filter });
+    if (!project) return res.status(404).json({ error: 'Project not found or access denied' });
+
+    await Project.findByIdAndDelete(req.params.id);
+    res.json({ deleted: true, id: req.params.id });
+  } catch (err) { next(err); }
+});
+
+// ─── PATCH /api/projects/:id ──────────────────────────────────────────────────
+// Edit liveUrl and/or videoUrl of an owned project
+router.patch('/:id', optionalAuth, async (req, res, next) => {
+  try {
+    if (!req.user && !req.demoSessionId)
+      return res.status(401).json({ error: 'Not authenticated' });
+
+    const filter = scopeFilter(req);
+    const project = await Project.findOne({ _id: req.params.id, ...filter });
+    if (!project) return res.status(404).json({ error: 'Project not found or access denied' });
+
+    const allowed = ['liveUrl', 'videoUrl'];
+    const updates = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    const updated = await Project.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, select: '-fileTree -readmeContent' }
+    );
+    res.json({ project: updated });
+  } catch (err) { next(err); }
+});
+
+// ─── POST /api/projects/:id/readme ───────────────────────────────────────────
+// Generate a professional README using Gemini from stored project context
+router.post('/:id/readme', optionalAuth, async (req, res, next) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const readme = await generateReadme({
+      fullName:        project.fullName,
+      description:     project.description,
+      primaryLanguage: project.primaryLanguage,
+      languages:       project.languages || {},
+      techStack:       project.techStack || [],
+      topics:          project.topics || [],
+      liveUrl:         project.liveUrl || '',
+      aiSummary:       project.aiSummary || '',
+    });
+
+    res.json({ readme });
   } catch (err) { next(err); }
 });
 
