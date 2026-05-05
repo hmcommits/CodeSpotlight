@@ -16,6 +16,8 @@
 <br>
 **Watch Demo:** https://youtu.be/BZO2LhEN5AU
 
+> **🚨 FOR HACKATHON JUDGES:** You do **not** need to create an account to test the platform! Simply click the **"Try Demo"** button on the landing page to enter a secure, temporary sandbox session where you can generate AI case studies immediately.
+
 </div>
 
 ---
