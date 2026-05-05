@@ -12,7 +12,9 @@
 
 *Transform any public GitHub repository into a beautifully rendered, AI-powered case study.*
 
-[**Live Application**](https://codespotlight-hm.web.app) • [**Watch Demo**](#demo-link-placeholder) • [**Report Bug**](https://github.com/hmcommits/CodeSpotlight/issues)
+**Live Application / Deployment Link:** https://codespotlight-hm.web.app
+<br>
+**Watch Demo:** https://youtu.be/BZO2LhEN5AU
 
 </div>
 
@@ -51,6 +53,16 @@ Paste a GitHub URL, and CodeSpotlight's integration with Gemini AI and the GitHu
 - **Database:** MongoDB Atlas (Mongoose)
 - **AI Integration:** `@google/generative-ai` (Gemini 2.5 Flash)
 - **Hosting:** Render.com
+
+---
+
+## 🌐 Deployment Information
+
+This project is fully deployed and accessible live for the hackathon judging process:
+- **Frontend (Flutter Web):** Deployed on **Firebase Hosting**
+- **Backend (Node.js/Express):** Deployed on **Render.com**
+- **Database (MongoDB):** Hosted on **MongoDB Atlas**
+- **Live URL:** https://codespotlight-hm.web.app
 
 ---
 
@@ -156,19 +168,6 @@ flutter build web --release --dart-define=BACKEND_URL=https://<YOUR-RENDER-URL>.
 # Deploy to Firebase Hosting
 firebase deploy --only hosting
 ```
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
 
 ## 📝 License
 
