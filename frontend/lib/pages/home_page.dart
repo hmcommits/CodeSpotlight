@@ -360,7 +360,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       crossAxisCount: cols,
       crossAxisSpacing: 14,
       mainAxisSpacing: 14,
-      childAspectRatio: 1.1,   // taller cards to fit buttons + content
+      mainAxisExtent: 350, // Fixed height to prevent RenderFlex overflows
     );
   }
 }

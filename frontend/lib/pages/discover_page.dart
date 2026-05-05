@@ -83,7 +83,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
             backgroundColor: AppTheme.background,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
-            expandedHeight: 140,
+            expandedHeight: 160,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
               onPressed: () =>
@@ -304,7 +304,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
       crossAxisCount: cols,
       crossAxisSpacing: 14,
       mainAxisSpacing: 14,
-      childAspectRatio: 1.1,
+      mainAxisExtent: 350,
     );
   }
 }

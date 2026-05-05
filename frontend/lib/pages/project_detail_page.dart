@@ -150,7 +150,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                 if (context.canPop()) {
                   context.pop();
                 } else {
-                  context.go('/');
+                  if (AuthService.instance.isAuthenticated) {
+                    context.go('/app');
+                  } else {
+                    context.go('/discover');
+                  }
                 }
               },
             ),

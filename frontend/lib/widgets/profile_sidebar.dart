@@ -282,6 +282,9 @@ class _SocialLinksRow extends StatefulWidget {
 
 class _SocialLinksRowState extends State<_SocialLinksRow> {
   Future<void> _launch(String url) async {
+    if (!url.startsWith('http')) {
+      url = 'https://$url';
+    }
     final uri = Uri.tryParse(url);
     if (uri != null && await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -365,7 +368,7 @@ class _SocialLinksRowState extends State<_SocialLinksRow> {
           _SocialBtn(icon: Icons.language, onTap: () => _launch(links['portfolio']!)),
         if (isMe)
           IconButton(
-            icon: Icon(hasLinks ? Icons.edit_rounded : Icons.add_link_rounded, size: 18),
+            icon: Icon(hasLinks ? Icons.edit_rounded : Icons.add_link_rounded, size: 22),
             color: AppTheme.primary,
             tooltip: 'Edit Links',
             onPressed: _editLinks,
@@ -382,7 +385,7 @@ class _SocialBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: icon is IconData ? Icon(icon as IconData, size: 18) : FaIcon(icon, size: 18),
+      icon: icon is IconData ? Icon(icon as IconData, size: 24) : FaIcon(icon, size: 24),
       color: AppTheme.textSecondary,
       onPressed: onTap,
       hoverColor: AppTheme.primary.withValues(alpha: 0.1),

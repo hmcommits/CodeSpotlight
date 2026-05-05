@@ -84,7 +84,7 @@ class _ProjectCardState extends State<ProjectCard> {
                 // ── Card body (expands to fill space) ──────────────────────
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -141,7 +141,7 @@ class _ProjectCardState extends State<ProjectCard> {
                           ],
                         ),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
 
                         // Description
                         Flexible(
@@ -150,12 +150,12 @@ class _ProjectCardState extends State<ProjectCard> {
                                 ? p.description
                                 : 'No description available.',
                             style: AppTheme.bodyMedium.copyWith(fontSize: 13),
-                            maxLines: 3,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
 
                         // Stats + AI badge row
                         Row(
@@ -178,19 +178,22 @@ class _ProjectCardState extends State<ProjectCard> {
 
                         // Language bar
                         if (p.languages.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(3),
                             child: SizedBox(
                               height: 4,
-                              child: LanguageBar(languages: p.languages),
+                              child: LanguageBar(
+                                languages: p.languages,
+                                showLegend: false,
+                              ),
                             ),
                           ),
                         ],
 
                         // Tech chips
                         if (p.techStack.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Wrap(
                             spacing: 5,
                             runSpacing: 4,

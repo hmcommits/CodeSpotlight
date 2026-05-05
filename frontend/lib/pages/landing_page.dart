@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -398,12 +398,16 @@ class _FeaturesSection extends StatelessWidget {
   static const _features = [
     (Icons.psychology_rounded, 'AI Deep Dive',
         'Gemini 2.5 Flash generates a 3-paragraph technical case study explaining the architecture and hardest problems solved.'),
+    (Icons.description_rounded, 'Markdown READMEs',
+        'Instantly export your AI-generated project analysis to beautiful, fully-formatted Markdown ready for GitHub.'),
     (Icons.account_tree_rounded, 'Architecture Diagram',
         'Auto-generated Mermaid.js flowcharts visualize components, data flow, and system interactions.'),
     (Icons.grid_on_rounded, 'Commit Heatmap',
-        'A real 52-week Ã— 7-day contribution grid pulled live from GitHub shows proof of consistent effort.'),
+        'A real 52-week × 7-day contribution grid pulled live from GitHub shows proof of consistent effort.'),
     (Icons.bolt_rounded, 'Live Status Monitor',
         'Heartbeat checks ping your deployed URL and show a real-time live/down badge on every card.'),
+    (Icons.explore_rounded, 'Public Discoverability',
+        'Share a secure read-only link to your portfolio, complete with your social links, or browse the global developer feed.'),
   ];
 
   @override
@@ -503,9 +507,11 @@ class _HowItWorksSection extends StatelessWidget {
     (Icons.link_rounded, 'Paste GitHub URL',
         'Drop any public GitHub repository URL into CodeSpotlight.'),
     (Icons.auto_awesome_rounded, 'AI Analyzes',
-        'Gemini reads the file tree, README, and key files to build a deep-dive case study.'),
-    (Icons.share_rounded, 'Share Your Portfolio',
-        'Get a shareable link. Copy it to your resume, LinkedIn, or portfolio.'),
+        'Gemini builds a deep-dive case study, architecture diagram, and a fully formatted README for you.'),
+    (Icons.person_outline_rounded, 'Customize Profile',
+        'Add your LinkedIn, Twitter, and portfolio links to establish your professional brand.'),
+    (Icons.share_rounded, 'Share & Discover',
+        'Get a secure, read-only link for recruiters, and optionally appear on the global developer discovery feed.'),
   ];
 
   @override
@@ -536,7 +542,7 @@ class _HowItWorksSection extends StatelessWidget {
         ).animate().fadeIn(),
         const SizedBox(height: 48),
         LayoutBuilder(builder: (ctx, box) {
-          final cols = box.maxWidth > 700 ? 3 : 1;
+          final cols = box.maxWidth > 900 ? 4 : box.maxWidth > 600 ? 2 : 1;
           return Wrap(
             spacing: 24, runSpacing: 24,
             children: _steps.asMap().entries.map((e) {

@@ -122,6 +122,36 @@ router.get('/', optionalAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── GET /api/projects/public ─────────────────────────────────────────────────
+// Public discovery feed — no auth required
+router.get('/public', async (req, res, next) => {
+  try {
+    const { stack, language, sort = 'newest', limit = 30, page = 1 } = req.query;
+    const filter = { isDemo: false };
+    if (stack)    filter.techStack       = { $in: [stack] };
+    if (language) filter.primaryLanguage = { $regex: language, $options: 'i' };
+
+    const sortMap = {
+      newest: { createdAt: -1 },
+      stars:  { stars: -1 },
+      forks:  { forks: -1 },
+    };
+    const sortQuery = sortMap[sort] || sortMap.newest;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [projects, total] = await Promise.all([
+      Project.find(filter)
+        .sort(sortQuery)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .select('-fileTree -readmeContent -aiSummary'),
+      Project.countDocuments(filter),
+    ]);
+
+    res.json({ total, page: parseInt(page), projects });
+  } catch (err) { next(err); }
+});
+
 // ─── GET /api/projects/:id ────────────────────────────────────────────────────
 // Public — used for deep links / sharing
 router.get('/:id', async (req, res, next) => {
@@ -222,36 +252,6 @@ router.delete('/demo/:sessionId', async (req, res, next) => {
   try {
     const result = await Project.deleteMany({ demoSessionId: req.params.sessionId, isDemo: true });
     res.json({ deleted: result.deletedCount });
-  } catch (err) { next(err); }
-});
-
-// ─── GET /api/projects/public ─────────────────────────────────────────────────
-// Public discovery feed — no auth required
-router.get('/public', async (req, res, next) => {
-  try {
-    const { stack, language, sort = 'newest', limit = 30, page = 1 } = req.query;
-    const filter = { isDemo: false };
-    if (stack)    filter.techStack       = { $in: [stack] };
-    if (language) filter.primaryLanguage = { $regex: language, $options: 'i' };
-
-    const sortMap = {
-      newest: { createdAt: -1 },
-      stars:  { stars: -1 },
-      forks:  { forks: -1 },
-    };
-    const sortQuery = sortMap[sort] || sortMap.newest;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const [projects, total] = await Promise.all([
-      Project.find(filter)
-        .sort(sortQuery)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .select('-fileTree -readmeContent -aiSummary'),
-      Project.countDocuments(filter),
-    ]);
-
-    res.json({ total, page: parseInt(page), projects });
   } catch (err) { next(err); }
 });
 
