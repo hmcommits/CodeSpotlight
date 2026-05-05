@@ -1,147 +1,181 @@
+<div align="center">
+
 # CodeSpotlight ✨
 
-> **An AI-powered developer portfolio platform** — submit any public GitHub repo, get a beautifully rendered case study with architecture diagrams, commit heatmaps, language visualizations, and a fully-formatted Markdown README.
+**The Developer Proof-of-Work Platform**
 
 [![Flutter](https://img.shields.io/badge/Flutter-Web-02569B?logo=flutter)](https://flutter.dev)
 [![Node.js](https://img.shields.io/badge/Node.js-Backend-339933?logo=node.js)](https://nodejs.org)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb)](https://mongodb.com/atlas)
 [![Gemini](https://img.shields.io/badge/Gemini-2.5--Flash-4285F4?logo=google)](https://aistudio.google.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+*Transform any public GitHub repository into a beautifully rendered, AI-powered case study.*
+
+[**Live Application**](https://codespotlight-hm.web.app) • [**Watch Demo**](#demo-link-placeholder) • [**Report Bug**](https://github.com/hmcommits/CodeSpotlight/issues)
+
+</div>
 
 ---
 
-## What It Does
+## 📖 Overview
 
-Paste a GitHub URL → CodeSpotlight fetches the repo metadata, file tree, and key files, then runs a Gemini AI analysis to generate:
+Many developers build great projects but lose them in scattered GitHub repositories. **CodeSpotlight** is a centralized showcase directory where developers can host their deployed projects, generate AI-powered technical deep-dives, and present their work to recruiters through a polished, read-only portfolio interface.
 
-- **Technical Deep Dive** — a 3-paragraph case study explaining what the project does, hard problems solved, and architectural decisions made.
-- **Auto-Generated READMEs** — an instantly generated, fully-formatted Markdown README that you can preview and copy directly to your GitHub repo.
-- **Architecture Diagram** — a Mermaid.js flowchart showing components and data flow, rendered in a sandboxed iframe.
-- **Commit Heatmap** — 52-week × 7-day real GitHub contribution grid with intensity mapping.
-- **Language Constellation** — animated bubble chart of language usage proportional to bytes of code.
-- **Live Status Badge** — heartbeat check on the deployed URL.
+Paste a GitHub URL, and CodeSpotlight's integration with Gemini AI and the GitHub API instantly generates architecture diagrams, commit heatmaps, language visualizations, and a fully formatted Markdown README.
 
-### New Features (v2)
-- **Authentication & Profiles:** Secure JWT-based login system with customizable profiles and social links (LinkedIn, Twitter, Portfolio, GitHub).
-- **Public Discoverability:** A global "Discover" feed where developers can showcase their top projects.
-- **Read-Only Sharing:** Share a secure, read-only link to your portfolio with recruiters without exposing edit/delete controls.
+---
 
-## Tech Stack
+## ✨ Features
 
-| Layer | Technology |
-|---|---|
-| Frontend | Flutter Web (Canvas Kit renderer) |
-| Routing | go_router — shareable deep links & public feeds |
-| Backend | Node.js + Express + JWT Authentication |
-| Database | MongoDB Atlas (M0 free tier) |
-| AI | Gemini 2.5 Flash (via `@google/generative-ai`) |
-| GitHub Data | GitHub REST API v3 (PAT-authenticated) |
-| Diagrams | Mermaid.js v11 (iframe-sandboxed) |
-| Markdown | `flutter_markdown` |
-| Hosting | Firebase Hosting (frontend) + Render.com (backend) |
+- **🤖 AI Technical Deep Dive:** Gemini 2.5 Flash generates a comprehensive case study explaining the project's purpose, the hardest problems solved, and the architectural decisions made.
+- **📄 Auto-Generated READMEs:** Export your AI-generated project analysis to beautiful, fully-formatted Markdown, ready to be pushed directly to your GitHub repository.
+- **🏗️ Architecture Diagrams:** Auto-generated Mermaid.js flowcharts visualize components, data flow, and system interactions in a secure sandboxed iframe.
+- **🔥 Commit Heatmap:** A real 52-week × 7-day contribution grid pulled live from GitHub to showcase consistent effort.
+- **🌍 Public Discoverability:** A global "Discover" feed where developers can browse top projects filtered by tech stack (MERN, Web3, AI, etc.).
+- **🔐 Secure Portfolio Sharing:** Share a read-only link to your portfolio with recruiters without exposing edit/delete controls. Includes customizable social links (LinkedIn, Twitter, Portfolio).
 
-## Running Locally
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Framework:** Flutter Web (Canvas Kit)
+- **Routing:** `go_router` for shareable deep links
+- **Markdown:** `flutter_markdown`
+- **Hosting:** Firebase Hosting
+
+### Backend
+- **Framework:** Node.js + Express
+- **Authentication:** JWT (JSON Web Tokens)
+- **Database:** MongoDB Atlas (Mongoose)
+- **AI Integration:** `@google/generative-ai` (Gemini 2.5 Flash)
+- **Hosting:** Render.com
+
+---
+
+## 🚀 Getting Started
+
+Follow these instructions to set up the project locally.
 
 ### Prerequisites
-- Flutter 3.x with Web target enabled
-- Node.js 18+
-- MongoDB Atlas free cluster
-- Gemini API key (free tier at [aistudio.google.com](https://aistudio.google.com))
-- GitHub Personal Access Token (public repo scope)
 
-### 1. Backend
+- [Node.js](https://nodejs.org/en/) (v18 or higher)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (3.x with Web target enabled)
+- A [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register) cluster URI
+- A Google [Gemini API Key](https://aistudio.google.com/)
+- A [GitHub Personal Access Token (PAT)](https://github.com/settings/tokens)
+
+### 1. Backend Setup
+
 ```bash
+# Navigate to the backend directory
 cd backend
+
+# Copy the environment template
 cp .env.example .env
-# Fill in GITHUB_PAT, GEMINI_API_KEY, MONGODB_URI, and JWT_SECRET in .env
-npm install
-npm run dev          # Starts on http://localhost:3000
 ```
 
-### 2. Frontend
+**Configure Environment Variables (`backend/.env`):**
+| Variable | Description |
+|---|---|
+| `PORT` | API port (default: `3000`) |
+| `MONGODB_URI` | MongoDB Atlas connection string |
+| `JWT_SECRET` | Secret key for signing authentication tokens |
+| `GITHUB_PAT` | GitHub Personal Access Token (public repo scope) |
+| `GEMINI_API_KEY` | Google AI Studio key |
+| `CLIENT_URL` | Frontend URL for CORS (e.g., `http://localhost:52870`) |
+
 ```bash
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+```
+
+### 2. Frontend Setup
+
+```bash
+# Open a new terminal and navigate to the frontend directory
 cd frontend
+
+# Get dependencies
 flutter pub get
+
+# Run the Flutter web app (Chrome)
 flutter run -d chrome
 ```
+*Note: The frontend is configured to communicate with `http://localhost:3000/api` by default.*
 
-The app connects to `http://localhost:3000/api` by default.
+---
 
-## Deployment
+## 📂 Project Structure
 
-### Backend → Render.com
-1. Create a Web Service pointing to this repo, root dir: `backend`
-2. Build Command: `npm install`
-3. Start Command: `npm start`
-4. Set Environment Variables: 
-   - `GITHUB_PAT`
-   - `GEMINI_API_KEY`
-   - `MONGODB_URI`
-   - `JWT_SECRET` (Required for authentication)
-   - `CLIENT_URL` (Your Firebase URL for CORS)
+```text
+CodeSpotlight/
+├── backend/
+│   ├── src/
+│   │   ├── controllers/      # Route logic
+│   │   ├── models/           # Mongoose schemas (User, Project)
+│   │   ├── routes/           # Express routes (auth.js, projects.js)
+│   │   └── services/         # Integrations (geminiService.js, githubService.js)
+│   └── index.js              # Server entry point
+│
+├── frontend/
+│   ├── lib/
+│   │   ├── models/           # Dart data models
+│   │   ├── pages/            # UI Screens (Dashboard, Discover, Detail)
+│   │   ├── services/         # API & Auth clients
+│   │   ├── theme/            # Global AppTheme and styling
+│   │   └── widgets/          # Reusable UI (Cards, Heatmap, Mermaid)
+│   └── web/                  # Web-specific assets (index.html)
+│
+└── deploy.sh                 # Deployment automation script
+```
 
-### Frontend → Firebase Hosting
+---
+
+## 🌐 Deployment
+
+### Deploying the Backend (Render)
+1. Connect your GitHub repository to [Render](https://render.com/).
+2. Create a new **Web Service**.
+3. Set the Root Directory to `backend`.
+4. Set Build Command to `npm install`.
+5. Set Start Command to `npm start`.
+6. Add all environment variables from your `.env` file to the Render dashboard.
+
+### Deploying the Frontend (Firebase)
 ```bash
 cd frontend
-flutter build web --release --dart-define=BACKEND_URL=https://YOUR-APP.onrender.com/api
+
+# Build the app, injecting the production backend URL
+flutter build web --release --dart-define=BACKEND_URL=https://<YOUR-RENDER-URL>.onrender.com/api
+
+# Deploy to Firebase Hosting
 firebase deploy --only hosting
 ```
 
-## Project Structure
+---
 
-```
-CodeSpotlight/
-├── frontend/                    ← Flutter Web
-│   └── lib/
-│       ├── main.dart
-│       ├── router/app_router.dart    ← go_router routes
-│       ├── models/
-│       ├── pages/
-│       │   ├── home_page.dart              ← User Dashboard
-│       │   ├── discover_page.dart          ← Public Feed
-│       │   ├── landing_page.dart           ← Marketing Page
-│       │   ├── project_detail_page.dart    ← Case Study & Diagrams
-│       │   └── add_project_sheet.dart
-│       ├── services/
-│       │   ├── api_service.dart
-│       │   └── auth_service.dart           ← JWT & Session Management
-│       ├── theme/app_theme.dart
-│       └── widgets/
-│           ├── profile_sidebar.dart        ← User info & Social Links
-│           ├── mermaid_diagram_view.dart   ← iframe-based Mermaid renderer
-│           ├── commit_heatmap.dart         ← CustomPainter 52×7 grid
-│           ├── language_constellation.dart ← Animated bubble chart
-│           └── ai_analysis_card.dart       ← Tabbed Markdown/Preview UI
-├── backend/
-│   └── src/
-│       ├── services/
-│       │   ├── geminiService.js    ← AI prompt + Mermaid sanitizer
-│       │   └── githubService.js    ← GitHub API extraction
-│       ├── routes/
-│       │   ├── auth.js             ← Registration, Login, Profile
-│       │   └── projects.js         ← Public and Private Project endpoints
-│       └── models/
-│           ├── User.js
-│           └── Project.js
-└── deploy.sh                    ← One-command build + deploy script
-```
+## 🤝 Contributing
 
-## Environment Variables
+Contributions, issues, and feature requests are welcome! 
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### Backend (`.env`)
-| Variable | Description |
-|---|---|
-| `GITHUB_PAT` | GitHub Personal Access Token |
-| `GEMINI_API_KEY` | Google AI Studio key |
-| `MONGODB_URI` | MongoDB Atlas connection string |
-| `JWT_SECRET` | Secret key for signing authentication tokens |
-| `CLIENT_URL` | Firebase Hosting URL (used for CORS policy) |
-| `PORT` | `3000` |
+---
 
-### Frontend (build-time)
-```bash
---dart-define=BACKEND_URL=https://your-backend.onrender.com/api
-```
+## 📝 License
 
-## License
+Distributed under the MIT License. See `LICENSE` for more information.
 
-MIT
+---
+
+<div align="center">
+  <b>Built with ❤️ for the developer community.</b>
+</div>
