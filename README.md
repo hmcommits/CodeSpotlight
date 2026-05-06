@@ -16,12 +16,12 @@
 <br>
 **Watch Demo:** https://youtu.be/BZO2LhEN5AU
 
-<br><br>
-### The Developer Proof-of-Work Platform 🚀
-Many developers build great projects but lose them in scattered GitHub repositories. Built a centralized showcase directory where developers can host their deployed projects, tag their tech stack, and attach demo videos. Include filtering options (e.g., MERN, Web3, AI) for easy discovery.
 </div>
 
 ---
+
+### 🚨 Problem Statement
+Many developers build great projects but lose them in scattered GitHub repositories. Built a centralized showcase directory where developers can host their deployed projects, tag their tech stack, and attach demo videos. Include filtering options (e.g., MERN, Web3, AI) for easy discovery.
 
 ## 📖 Overview
 
