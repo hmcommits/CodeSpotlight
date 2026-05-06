@@ -27,7 +27,7 @@ Many developers build great projects but lose them in scattered GitHub repositor
 
 ## 📖 Overview
 
-Many developers build great projects but lose them in scattered GitHub repositories. **CodeSpotlight** is a centralized showcase directory where developers can host their deployed projects, generate AI-powered technical deep-dives, and present their work to recruiters through a polished, read-only portfolio interface.
+**CodeSpotlight** is a centralized showcase directory where developers can host their deployed projects, generate AI-powered technical deep-dives, and present their work to recruiters through a polished, read-only portfolio interface.
 
 Paste a GitHub URL, and CodeSpotlight's integration with Gemini AI and the GitHub API instantly generates architecture diagrams, commit heatmaps, language visualizations, and a fully formatted Markdown README.
 
