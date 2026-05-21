@@ -26,6 +26,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _searchQuery = '';
   final _searchCtrl = TextEditingController();
   Timer? _pollTimer;
+  // Incremented each time _startPendingPoll is called.
+  // Timer callbacks capture this at creation and bail out if it has changed,
+  // preventing stale callbacks from calling setState after re-initialization.
+  int _pollGeneration = 0;
 
   @override
   void initState() {
@@ -81,9 +85,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _pollTimer?.cancel();
     final hasPending = _projects.any((p) => p.aiStatus == 'pending');
     if (!hasPending) return;
+
+    // Capture current generation; stale ticks from a previous poll cycle will bail out.
+    _pollGeneration++;
+    final generation = _pollGeneration;
+
     _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      // Bail out if this timer belongs to a superseded poll cycle
+      if (generation != _pollGeneration) return;
       final updated = await ApiService.getProjects().catchError((_) => _projects);
-      if (!mounted) return;
+      if (!mounted || generation != _pollGeneration) return;
       setState(() {
         _projects = updated;
         _applyFilters();
