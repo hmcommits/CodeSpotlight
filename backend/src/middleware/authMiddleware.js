@@ -1,6 +1,12 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'codespotlight-dev-secret-change-in-prod';
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    'FATAL: JWT_SECRET environment variable is not set. ' +
+    'Set it in your .env file or Render/Firebase environment config before starting the server.'
+  );
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /** Requires a valid JWT. Sets req.user or responds 401. */
 const authenticate = (req, res, next) => {
