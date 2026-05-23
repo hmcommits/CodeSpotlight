@@ -4,10 +4,20 @@ const Project = require('../models/Project');
 const { validateGitHubUrl, extractAllRepoData } = require('../services/githubService');
 const { generateProjectAnalysis, generateReadme } = require('../services/geminiService');
 const { optionalAuth, authenticate }            = require('../middleware/authMiddleware');
+const { validatePublicUrl }                     = require('../utils/urlValidator');
+const analysisQueue                             = require('../services/analysisQueue');
 
 const router = express.Router();
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Escape a user-supplied string so it is safe to use inside a MongoDB $regex.
+ * Without this, inputs like "(a+)+" cause catastrophic backtracking (ReDoS).
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 /** Builds the MongoDB filter for scoping projects to user OR demo session. */
 function scopeFilter(req) {
@@ -80,19 +90,21 @@ router.post('/', optionalAuth, async (req, res, next) => {
     };
 
     const project = await Project.create(docData);
-    res.status(202).json({ message: 'Repository submitted. AI analysis running in background.', project });
+    res.status(202).json({ message: 'Repository submitted. AI analysis queued.', project });
 
-    // Async Gemini analysis
-    try {
-      const { summary, mermaid } = await generateProjectAnalysis(repoData);
-      await Project.findByIdAndUpdate(project._id, {
-        aiSummary: summary, mermaidDiagram: mermaid, aiStatus: 'done',
-      });
-      console.log(`✅ AI complete: ${fullName}`);
-    } catch (aiErr) {
-      await Project.findByIdAndUpdate(project._id, { aiStatus: 'failed' });
-      console.error(`❌ AI failed: ${fullName}:`, aiErr.message);
-    }
+    // Enqueue analysis — the queue processes one at a time and recovers on restart
+    analysisQueue.enqueue(project._id.toString(), {
+      fullName: repoData.fullName,
+      owner: repoData.owner,
+      repo: repoData.repo,
+      description: repoData.description,
+      primaryLanguage: repoData.primaryLanguage,
+      languages: repoData.languages || {},
+      fileTree: repoData.fileTree || [],
+      keyFilesContent: repoData.keyFilesContent || '',
+      techStack: repoData.techStack || [],
+      topics: repoData.topics || [],
+    });
   } catch (err) { next(err); }
 });
 
@@ -106,12 +118,13 @@ router.get('/', optionalAuth, async (req, res, next) => {
 
     const { stack, language, search } = req.query;
     if (stack)    filter.techStack        = { $in: [stack] };
-    if (language) filter.primaryLanguage  = { $regex: language, $options: 'i' };
+    if (language) filter.primaryLanguage  = { $regex: escapeRegex(language), $options: 'i' };
     if (search) {
+      const safeSearch = escapeRegex(search);
       filter.$or = [
-        { repo:        { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { owner:       { $regex: search, $options: 'i' } },
+        { repo:        { $regex: safeSearch, $options: 'i' } },
+        { description: { $regex: safeSearch, $options: 'i' } },
+        { owner:       { $regex: safeSearch, $options: 'i' } },
       ];
     }
 
@@ -129,7 +142,7 @@ router.get('/public', async (req, res, next) => {
     const { stack, language, sort = 'newest', limit = 30, page = 1 } = req.query;
     const filter = { isDemo: false };
     if (stack)    filter.techStack       = { $in: [stack] };
-    if (language) filter.primaryLanguage = { $regex: language, $options: 'i' };
+    if (language) filter.primaryLanguage = { $regex: escapeRegex(language), $options: 'i' };
 
     const sortMap = {
       newest: { createdAt: -1 },
@@ -181,6 +194,13 @@ router.post('/:id/heartbeat', optionalAuth, async (req, res, next) => {
     const url = req.body.liveUrl || project.liveUrl;
     if (!url) return res.status(400).json({ error: 'No liveUrl provided' });
 
+    // Validate URL is a safe public endpoint before making outbound request (SSRF protection)
+    try {
+      await validatePublicUrl(url);
+    } catch (validationErr) {
+      return res.status(400).json({ error: validationErr.message });
+    }
+
     let status = 'down';
     try {
       await axios.get(url, { timeout: 8000, maxRedirects: 3 });
@@ -206,23 +226,16 @@ router.post('/:id/reanalyze', optionalAuth, async (req, res, next) => {
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
     await Project.findByIdAndUpdate(req.params.id, { aiStatus: 'pending' });
-    res.json({ message: 'Re-analysis started' });
 
-    const repoContext = {
+    // Enqueue via the queue instead of a raw floating promise
+    analysisQueue.enqueue(project._id.toString(), {
       fullName: project.fullName, owner: project.owner, repo: project.repo,
       description: project.description, primaryLanguage: project.primaryLanguage,
       languages: project.languages || {}, fileTree: project.fileTree || [],
       keyFilesContent: '', techStack: project.techStack || [], topics: project.topics || [],
-    };
+    });
 
-    try {
-      const { summary, mermaid } = await generateProjectAnalysis(repoContext);
-      await Project.findByIdAndUpdate(project._id, {
-        aiSummary: summary, mermaidDiagram: mermaid, aiStatus: 'done',
-      });
-    } catch (err) {
-      await Project.findByIdAndUpdate(project._id, { aiStatus: 'failed' });
-    }
+    res.json({ message: 'Re-analysis queued', queueDepth: analysisQueue.depth });
   } catch (err) { next(err); }
 });
 
@@ -247,10 +260,18 @@ router.get('/:id/commit-activity', async (req, res, next) => {
 });
 
 // ─── DELETE /api/projects/demo/:sessionId ────────────────────────────────────
-// Called when user exits demo mode — wipes all their demo projects instantly
+// Called when user exits demo mode — wipes all their demo projects instantly.
+// Basic protection: sessionId must match UUID v4 format.
 router.delete('/demo/:sessionId', async (req, res, next) => {
   try {
-    const result = await Project.deleteMany({ demoSessionId: req.params.sessionId, isDemo: true });
+    const { sessionId } = req.params;
+    // Reject anything that isn't a UUID v4 — prevents enumeration probing
+    const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidV4Regex.test(sessionId)) {
+      return res.status(400).json({ error: 'Invalid session ID format.' });
+    }
+    // isDemo:true guard ensures this can never accidentally touch real user data
+    const result = await Project.deleteMany({ demoSessionId: sessionId, isDemo: true });
     res.json({ deleted: result.deletedCount });
   } catch (err) { next(err); }
 });
@@ -271,7 +292,8 @@ router.delete('/:id', optionalAuth, async (req, res, next) => {
 });
 
 // ─── PATCH /api/projects/:id ──────────────────────────────────────────────────
-// Edit liveUrl and/or videoUrl of an owned project
+// Edit user-controllable project fields.
+// Allowed: liveUrl, videoUrl, customDescription, featured, displayOrder, isPublicOnPortfolio
 router.patch('/:id', optionalAuth, async (req, res, next) => {
   try {
     if (!req.user && !req.demoSessionId)
@@ -281,10 +303,19 @@ router.patch('/:id', optionalAuth, async (req, res, next) => {
     const project = await Project.findOne({ _id: req.params.id, ...filter });
     if (!project) return res.status(404).json({ error: 'Project not found or access denied' });
 
-    const allowed = ['liveUrl', 'videoUrl'];
+    const ALLOWED = ['liveUrl', 'videoUrl', 'customDescription', 'featured', 'displayOrder', 'isPublicOnPortfolio'];
     const updates = {};
-    for (const key of allowed) {
+    for (const key of ALLOWED) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    // Validate displayOrder is a non-negative integer
+    if (updates.displayOrder !== undefined) {
+      const order = parseInt(updates.displayOrder, 10);
+      if (isNaN(order) || order < 0) {
+        return res.status(400).json({ error: 'displayOrder must be a non-negative integer.' });
+      }
+      updates.displayOrder = order;
     }
 
     const updated = await Project.findByIdAndUpdate(
@@ -319,8 +350,18 @@ router.post('/:id/readme', optionalAuth, async (req, res, next) => {
 });
 
 // ─── POST /api/projects/admin/reanalyze-all ──────────────────────────────────
+// Protected: requires X-Admin-Secret header matching ADMIN_SECRET env var
 router.post('/admin/reanalyze-all', async (req, res, next) => {
   try {
+    const adminSecret = process.env.ADMIN_SECRET;
+    if (!adminSecret) {
+      return res.status(503).json({ error: 'Admin endpoint is disabled: ADMIN_SECRET env var is not configured.' });
+    }
+    const provided = req.headers['x-admin-secret'];
+    if (!provided || provided !== adminSecret) {
+      return res.status(401).json({ error: 'Unauthorized: invalid or missing X-Admin-Secret header.' });
+    }
+
     const projects = await Project.find({ isDemo: false }).select('_id fullName fileTree');
     res.json({ message: `Queued ${projects.length} projects for re-analysis` });
 

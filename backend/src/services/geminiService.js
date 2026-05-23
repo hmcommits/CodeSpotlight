@@ -93,14 +93,17 @@ CRITICAL: Return ONLY the raw JSON object. No markdown fences, no \`\`\`json, no
 }
 
 /**
- * Generate AI analysis. Retries once on failure with 2s delay.
+ * Generate AI analysis.
+ * Retries up to 4 times with exponential backoff.
+ * 429 rate-limit errors are detected and given a longer initial wait.
  */
 async function generateProjectAnalysis(repoContext) {
   const prompt = buildPrompt(repoContext);
+  const MAX_ATTEMPTS = 4;
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      console.log(`🤖 Gemini attempt ${attempt} for ${repoContext.fullName}...`);
+      console.log(`🤖 Gemini attempt ${attempt}/${MAX_ATTEMPTS} for ${repoContext.fullName}...`);
       const result = await model.generateContent(prompt);
       const text = result.response.text().trim();
       console.log(`📝 Raw Gemini response (first 200 chars): ${text.slice(0, 200)}`);
@@ -122,11 +125,18 @@ async function generateProjectAnalysis(repoContext) {
       console.log(`✅ Gemini analysis complete for ${repoContext.fullName}`);
       return { summary: parsed.summary, mermaid: safeMermaid };
     } catch (err) {
+      const isRateLimit = err.message?.includes('429') || err.status === 429;
       console.error(`❌ Gemini attempt ${attempt} failed for ${repoContext.fullName}:`, err.message);
-      if (attempt === 2) {
-        throw new Error(`Gemini analysis failed after 2 attempts: ${err.message}`);
+
+      if (attempt === MAX_ATTEMPTS) {
+        throw new Error(`Gemini analysis failed after ${MAX_ATTEMPTS} attempts: ${err.message}`);
       }
-      await sleep(2000);
+
+      // Exponential backoff: 2s, 4s, 8s. Rate limits get 10s base.
+      const baseDelay = isRateLimit ? 10000 : 2000;
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.log(`⏳ Waiting ${delay / 1000}s before retry...`);
+      await sleep(delay);
     }
   }
 }
