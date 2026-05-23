@@ -225,6 +225,66 @@ class ApiService {
     throw Exception('Failed to update profile');
   }
 
+  // ── PATCH /api/portfolio/me/portfolio ───────────────────────────────────────
+  static Future<AppUser> updatePortfolio({
+    String? bio,
+    String? avatarUrl,
+    String? portfolioTemplate,
+    bool? portfolioPublished,
+  }) async {
+    final body = <String, dynamic>{};
+    if (bio != null) body['bio'] = bio;
+    if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
+    if (portfolioTemplate != null) body['portfolioTemplate'] = portfolioTemplate;
+    if (portfolioPublished != null) body['portfolioPublished'] = portfolioPublished;
+
+    final res = await http.patch(
+      Uri.parse('$baseUrl/portfolio/me/portfolio'),
+      headers: _headers,
+      body: jsonEncode(body),
+    ).timeout(_timeout);
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      return AppUser.fromJson(data['user'] as Map<String, dynamic>);
+    }
+    throw Exception((jsonDecode(res.body) as Map)['error'] ?? 'Failed to update portfolio');
+  }
+
+  // ── POST /api/portfolio/me/slug ─────────────────────────────────────────────
+  static Future<AppUser> claimSlug(String slug) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/portfolio/me/slug'),
+      headers: _headers,
+      body: jsonEncode({'slug': slug}),
+    ).timeout(_timeout);
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      return AppUser.fromJson(data['user'] as Map<String, dynamic>);
+    }
+    throw Exception((jsonDecode(res.body) as Map)['error'] ?? 'Failed to claim slug');
+  }
+
+  // ── GET /api/portfolio/:slug ────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> getPortfolioBySlug(String slug) async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/portfolio/$slug'),
+    ).timeout(_timeout);
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      return {
+        'user': AppUser.fromJson(data['user'] as Map<String, dynamic>),
+        'projects': (data['projects'] as List<dynamic>)
+            .map((e) => Project.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        'stats': data['stats'],
+      };
+    }
+    throw Exception('Portfolio not found');
+  }
+
   // ── GET /api/health ─────────────────────────────────────────────────────────
   static Future<bool> checkHealth() async {
     try {
