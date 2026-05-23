@@ -3,10 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
-const projectRoutes = require('./src/routes/projects');
-const authRoutes    = require('./src/routes/auth');
-const errorHandler  = require('./src/middleware/errorHandler');
-const analysisQueue = require('./src/services/analysisQueue');
+const projectRoutes   = require('./src/routes/projects');
+const authRoutes      = require('./src/routes/auth');
+const portfolioRoutes = require('./src/routes/portfolio');
+const errorHandler    = require('./src/middleware/errorHandler');
+const analysisQueue   = require('./src/services/analysisQueue');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,8 +37,9 @@ app.get('/api/health', (req, res) => {
 });
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
-app.use('/api/auth',     authRoutes);
-app.use('/api/projects', projectRoutes);
+app.use('/api/auth',      authRoutes);
+app.use('/api/projects',  projectRoutes);
+app.use('/api/portfolio', portfolioRoutes);
 
 // ─── 404 handler ────────────────────────────────────────────────────────────
 app.use((req, res) => {
