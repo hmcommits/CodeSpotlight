@@ -7,6 +7,10 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../models/user_model.dart';
 import '../models/project_model.dart';
+import '../widgets/portfolio_templates/minimal_template.dart';
+import '../widgets/portfolio_templates/grid_template.dart';
+import '../widgets/portfolio_templates/terminal_template.dart';
+import '../widgets/portfolio_templates/glassmorphic_template.dart';
 
 class PortfolioEditorPage extends StatefulWidget {
   const PortfolioEditorPage({super.key});
@@ -146,7 +150,10 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
           const SizedBox(width: 24),
         ],
       ),
-      body: SingleChildScrollView(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 1000;
+          final editor = SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
@@ -324,8 +331,64 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
             ],
           ),
         ),
-      ),
-    );
+      );
+
+      if (!isWide) {
+        return editor;
+      }
+
+      final mockUser = AppUser(
+        id: AuthService.instance.user?.id ?? 'live_preview',
+        email: AuthService.instance.user?.email ?? '',
+        name: AuthService.instance.user?.name ?? 'Your Name',
+        githubId: AuthService.instance.user?.githubId ?? '',
+        memberSince: AuthService.instance.user?.memberSince ?? DateTime.now(),
+        socialLinks: AuthService.instance.user?.socialLinks ?? [],
+        bio: _bioController.text,
+        avatarUrl: _avatarController.text,
+        portfolioTemplate: _selectedTemplate,
+        portfolioPublished: _isPublished,
+        portfolioSlug: _slugController.text,
+      );
+
+      final stats = {
+        'totalStars': _projects.fold<int>(0, (s, p) => s + p.stars),
+        'totalForks': _projects.fold<int>(0, (s, p) => s + p.forks),
+        'languages': <String, int>{},
+      };
+
+      Widget templateView;
+      switch (_selectedTemplate) {
+        case 'minimal': templateView = MinimalTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
+        case 'terminal': templateView = TerminalTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
+        case 'glassmorphic': templateView = GlassmorphicTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
+        case 'grid':
+        default: templateView = GridTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
+      }
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(right: BorderSide(color: AppTheme.border)),
+              ),
+              child: editor,
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: ClipRect(
+              child: IgnorePointer(
+                child: templateView,
+              ),
+            ),
+          ),
+        ],
+      );
+    });
   }
 }
 
