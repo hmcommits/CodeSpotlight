@@ -100,16 +100,25 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
       background: #0F0F0F;
       padding: 16px;
       font-family: Inter, sans-serif;
-      /* Allow vertical scroll inside iframe */
-      overflow-y: auto;
-      overflow-x: hidden;
-      min-height: 100%;
+      overflow: hidden; /* Hide ugly scrollbars */
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #out {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     #out svg {
       display: block !important;
       width: 100% !important;
-      height: auto !important;
+      height: 100% !important;
       max-width: 100% !important;
+      max-height: 100% !important;
     }
     .node rect, .node circle, .node ellipse,
     .node polygon, .node path {
