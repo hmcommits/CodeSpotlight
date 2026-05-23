@@ -5,12 +5,22 @@ class AppUser {
   final String email;
   final String name;
   final Map<String, String> socialLinks;
+  final String bio;
+  final String avatarUrl;
+  final String portfolioTemplate;
+  final bool portfolioPublished;
+  final String portfolioSlug;
 
   const AppUser({
     required this.id,
     required this.email,
     required this.name,
     this.socialLinks = const {},
+    this.bio = '',
+    this.avatarUrl = '',
+    this.portfolioTemplate = 'grid',
+    this.portfolioPublished = false,
+    this.portfolioSlug = '',
   });
 
   /// Parses a User object from the backend.
@@ -30,6 +40,11 @@ class AppUser {
       email:       json['email'] as String? ?? '',
       name:        json['name'] as String? ?? '',
       socialLinks: parsedLinks,
+      bio:         json['bio'] as String? ?? '',
+      avatarUrl:   json['avatarUrl'] as String? ?? '',
+      portfolioTemplate: json['portfolioTemplate'] as String? ?? 'grid',
+      portfolioPublished: json['portfolioPublished'] as bool? ?? false,
+      portfolioSlug: json['portfolioSlug'] as String? ?? '',
     );
   }
 
@@ -38,6 +53,11 @@ class AppUser {
     'email': email,
     'name': name,
     'socialLinks': socialLinks,
+    'bio': bio,
+    'avatarUrl': avatarUrl,
+    'portfolioTemplate': portfolioTemplate,
+    'portfolioPublished': portfolioPublished,
+    'portfolioSlug': portfolioSlug,
   };
 
   String toJsonString() => jsonEncode(toJson());

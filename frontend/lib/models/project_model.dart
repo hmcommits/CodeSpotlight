@@ -19,6 +19,10 @@ class Project {
   final DateTime? lastHeartbeatCheck;
   final DateTime createdAt;
   final String userId;
+  final bool featured;
+  final int displayOrder;
+  final bool isPublicOnPortfolio;
+  final String customDescription;
 
   const Project({
     required this.id,
@@ -41,6 +45,10 @@ class Project {
     this.lastHeartbeatCheck,
     required this.createdAt,
     required this.userId,
+    this.featured = false,
+    this.displayOrder = 0,
+    this.isPublicOnPortfolio = true,
+    this.customDescription = '',
   });
 
   factory Project.fromJson(Map<String, dynamic> json) {
@@ -69,6 +77,10 @@ class Project {
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
       userId: json['userId'] ?? '',
+      featured: json['featured'] as bool? ?? false,
+      displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
+      isPublicOnPortfolio: json['isPublicOnPortfolio'] as bool? ?? true,
+      customDescription: json['customDescription'] ?? '',
     );
   }
 
@@ -91,6 +103,10 @@ class Project {
         'videoUrl': videoUrl,
         'heartbeatStatus': heartbeatStatus,
         'createdAt': createdAt.toIso8601String(),
+        'featured': featured,
+        'displayOrder': displayOrder,
+        'isPublicOnPortfolio': isPublicOnPortfolio,
+        'customDescription': customDescription,
       };
 
   /// Convenience: total language bytes for percentage calculations
@@ -137,6 +153,10 @@ class Project {
       lastHeartbeatCheck: lastHeartbeatCheck ?? this.lastHeartbeatCheck,
       createdAt: createdAt,
       userId: userId ?? this.userId,
+      featured: featured,
+      displayOrder: displayOrder,
+      isPublicOnPortfolio: isPublicOnPortfolio,
+      customDescription: customDescription,
     );
   }
 }
