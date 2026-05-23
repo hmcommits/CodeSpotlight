@@ -2,6 +2,7 @@
 // Uses srcdoc (not data: URL) for CSP compatibility in production (Firebase Hosting).
 // The iframe renders the SVG scaled to fit width; container is scrollable vertically.
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -44,13 +45,21 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
   void _listenMessages() {
     _msgHandler = (web.MessageEvent event) {
       try {
-        final data = event.data.dartify();
-        if (data is! Map) return;
-        final type = data['type'] as String?;
-        if (type == 'mermaid-error' && mounted) {
-          setState(() => _renderFailed = true);
+        // Safe interop for JS message event data in release mode.
+        // dartify() or dynamic casting can fail during minification.
+        final jsData = event.data as JSObject?;
+        if (jsData == null) return;
+        
+        final typeProp = jsData.getProperty('type'.toJS);
+        if (typeProp != null && typeProp.isA<JSString>()) {
+          final type = (typeProp as JSString).toDart;
+          if (type == 'mermaid-error' && mounted) {
+            setState(() => _renderFailed = true);
+          }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Mermaid interop parse error: $e');
+      }
     }.toJS;
     web.window.addEventListener('message', _msgHandler!);
   }
@@ -67,8 +76,8 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
 
       // ── Use srcdoc instead of data: URL ──────────────────────────────────
       // data: URLs are blocked by Firebase Hosting's Content-Security-Policy.
-      // srcdoc is CSP-safe and works in all modern browsers.
-      (iframe as dynamic).srcdoc = _buildHtml(widget.diagram);
+      // Use setProperty for safe JS interop in --release mode, avoiding 'dynamic' dispatch errors.
+      iframe.setProperty('srcdoc'.toJS, _buildHtml(widget.diagram).toJS);
 
       ui_web.platformViewRegistry.registerViewFactory(_viewId, (_) => iframe);
       setState(() => _registered = true);
