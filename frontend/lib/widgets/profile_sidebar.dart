@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import '../models/project_model.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
@@ -127,6 +128,8 @@ class ProfileSidebar extends StatelessWidget {
               // ── Share link ───────────────────────────────────────────────
               if (!isDemo && user != null) ...[
                 _ShareProfileButton(userId: user!.id),
+                const SizedBox(height: 12),
+                const _PortfolioEditorButton(),
                 const SizedBox(height: 20),
               ],
 
@@ -265,6 +268,36 @@ class _ShareProfileButton extends StatelessWidget {
           Text('Copy Profile Link',
               style: AppTheme.bodyMedium.copyWith(
                   color: AppTheme.primary,
+                  fontWeight: FontWeight.w600)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Portfolio Editor Button ───────────────────────────────────────────────────
+class _PortfolioEditorButton extends StatelessWidget {
+  const _PortfolioEditorButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/app/portfolio'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.secondary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: AppTheme.secondary.withValues(alpha: 0.35)),
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.brush_rounded, size: 16, color: AppTheme.secondary),
+          const SizedBox(width: 8),
+          Text('My Portfolio',
+              style: AppTheme.bodyMedium.copyWith(
+                  color: AppTheme.secondary,
                   fontWeight: FontWeight.w600)),
         ]),
       ),
