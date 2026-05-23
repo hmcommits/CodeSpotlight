@@ -5,6 +5,8 @@ import '../pages/home_page.dart';
 import '../pages/project_detail_page.dart';
 import '../pages/public_profile_page.dart';
 import '../pages/discover_page.dart';
+import '../pages/portfolio_page.dart';
+import '../pages/portfolio_editor_page.dart';
 import '../services/auth_service.dart';
 import '../models/project_model.dart';
 
@@ -42,6 +44,12 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/p/:slug',
+      builder: (_, state) => PortfolioPage(
+        slug: state.pathParameters['slug']!,
+      ),
+    ),
+    GoRoute(
       path: '/project/:id',
       builder: (context, state) {
         final extra = state.extra;
@@ -57,6 +65,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/app',
       builder: (_, __) => const HomePage(),
+    ),
+    GoRoute(
+      path: '/app/portfolio',
+      builder: (_, __) => const PortfolioEditorPage(),
     ),
     GoRoute(
       path: '/app/project/:id',
