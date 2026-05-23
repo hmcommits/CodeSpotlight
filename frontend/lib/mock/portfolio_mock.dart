@@ -2,7 +2,7 @@ import '../models/user_model.dart';
 import '../models/project_model.dart';
 
 class PortfolioMock {
-  static const bool kUseMock = true;
+  static const bool kUseMock = false;
 
   static Map<String, dynamic> getPortfolioMock() {
     return {
