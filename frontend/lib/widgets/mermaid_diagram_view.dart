@@ -1,12 +1,10 @@
 // Web-only widget — renders Mermaid diagrams inside an iframe.
 // Uses srcdoc (not data: URL) for CSP compatibility in production (Firebase Hosting).
 // The iframe renders the SVG scaled to fit width; container is scrollable vertically.
-import 'dart:js_interop';
-import 'dart:js_interop_unsafe';
+import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:web/web.dart' as web;
 import '../theme/app_theme.dart';
 
 class MermaidDiagramView extends StatefulWidget {
@@ -24,7 +22,7 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
   bool _registered = false;
   bool _renderFailed = false;
 
-  JSFunction? _msgHandler;
+  void Function(html.Event)? _msgHandler;
 
   @override
   void initState() {
@@ -37,47 +35,39 @@ class _MermaidDiagramViewState extends State<MermaidDiagramView> {
   @override
   void dispose() {
     if (_msgHandler != null) {
-      web.window.removeEventListener('message', _msgHandler!);
+      html.window.removeEventListener('message', _msgHandler);
     }
     super.dispose();
   }
 
   void _listenMessages() {
-    _msgHandler = (web.MessageEvent event) {
-      try {
-        // Safe interop for JS message event data in release mode.
-        // dartify() or dynamic casting can fail during minification.
-        final jsData = event.data as JSObject?;
-        if (jsData == null) return;
-        
-        final typeProp = jsData.getProperty('type'.toJS);
-        if (typeProp != null && typeProp.isA<JSString>()) {
-          final type = (typeProp as JSString).toDart;
-          if (type == 'mermaid-error' && mounted) {
-            setState(() => _renderFailed = true);
+    _msgHandler = (html.Event event) {
+      if (event is html.MessageEvent) {
+        try {
+          final data = event.data;
+          if (data is Map) {
+            final type = data['type'] as String?;
+            if (type == 'mermaid-error' && mounted) {
+              setState(() => _renderFailed = true);
+            }
           }
+        } catch (e) {
+          debugPrint('Mermaid message parse error: $e');
         }
-      } catch (e) {
-        debugPrint('Mermaid interop parse error: $e');
       }
-    }.toJS;
-    web.window.addEventListener('message', _msgHandler!);
+    };
+    html.window.addEventListener('message', _msgHandler);
   }
 
   void _registerView() {
     if (widget.diagram.trim().isEmpty) return;
     try {
-      final iframe =
-          web.document.createElement('iframe') as web.HTMLIFrameElement;
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.border = '0';
-      iframe.style.background = '#0F0F0F';
-
-      // ── Use srcdoc instead of data: URL ──────────────────────────────────
-      // data: URLs are blocked by Firebase Hosting's Content-Security-Policy.
-      // Use setProperty for safe JS interop in --release mode, avoiding 'dynamic' dispatch errors.
-      iframe.setProperty('srcdoc'.toJS, _buildHtml(widget.diagram).toJS);
+      final iframe = html.IFrameElement()
+        ..style.width = '100%'
+        ..style.height = '100%'
+        ..style.border = '0'
+        ..style.background = '#0F0F0F'
+        ..srcdoc = _buildHtml(widget.diagram);
 
       ui_web.platformViewRegistry.registerViewFactory(_viewId, (_) => iframe);
       setState(() => _registered = true);
