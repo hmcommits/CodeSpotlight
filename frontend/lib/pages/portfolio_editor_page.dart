@@ -127,7 +127,7 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
         actions: [
           if (_isPublished)
             TextButton.icon(
-              icon: const Icon(LucideIcons.externalLink, size: 16),
+              icon: Icon(LucideIcons.externalLink, size: 16),
               label: const Text('View Live'),
               onPressed: () {
                 if (_slugController.text.isNotEmpty) {
@@ -140,7 +140,7 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
             onPressed: _isSaving ? null : _savePortfolio,
             icon: _isSaving 
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Icon(LucideIcons.save, size: 16),
+              : Icon(LucideIcons.save, size: 16),
             label: const Text('Save'),
           ),
           const SizedBox(width: 24),
@@ -339,13 +339,89 @@ class _TemplateCard extends StatelessWidget {
     required this.selected, required this.onTap,
   });
 
+  Widget _buildPreview() {
+    switch (id) {
+      case 'minimal':
+        return Container(
+          color: const Color(0xFFF9FAFB),
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(width: 30, height: 4, color: Colors.grey.shade300),
+              const SizedBox(height: 8),
+              Container(width: double.infinity, height: 20, decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade200))),
+              const SizedBox(height: 4),
+              Container(width: double.infinity, height: 20, decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade200))),
+            ],
+          ),
+        );
+      case 'grid':
+        return Container(
+          color: const Color(0xFF050505),
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Expanded(flex: 2, child: Container(decoration: BoxDecoration(color: const Color(0xFF111111), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFF2A2A2A))))),
+              const SizedBox(width: 6),
+              Expanded(child: Column(children: [
+                Expanded(child: Container(decoration: BoxDecoration(color: const Color(0xFF111111), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFF2A2A2A))))),
+                const SizedBox(height: 6),
+                Expanded(child: Container(decoration: BoxDecoration(color: const Color(0xFF111111), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFF2A2A2A))))),
+              ])),
+            ],
+          ),
+        );
+      case 'terminal':
+        return Container(
+          color: Colors.black,
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Text('>', style: TextStyle(color: Colors.greenAccent.shade400, fontSize: 8, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 4),
+                Container(width: 20, height: 4, color: Colors.greenAccent.shade400),
+              ]),
+              const SizedBox(height: 8),
+              Container(width: double.infinity, height: 16, decoration: BoxDecoration(border: Border.all(color: Colors.greenAccent.shade700.withOpacity(0.5)))),
+              const SizedBox(height: 4),
+              Container(width: double.infinity, height: 16, decoration: BoxDecoration(border: Border.all(color: Colors.greenAccent.shade700.withOpacity(0.5)))),
+            ],
+          ),
+        );
+      case 'glassmorphic':
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Color(0xFF4338CA), Color(0xFF3B82F6)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            children: [
+              Container(width: double.infinity, height: 20, decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.white.withOpacity(0.2)))),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(child: Container(height: 24, decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.white.withOpacity(0.2))))),
+                  const SizedBox(width: 6),
+                  Expanded(child: Container(height: 24, decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.white.withOpacity(0.2))))),
+                ],
+              )
+            ],
+          ),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTheme.radiusCard),
       child: Container(
-        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: selected ? AppTheme.primary.withOpacity(0.1) : AppTheme.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusCard),
@@ -354,13 +430,27 @@ class _TemplateCard extends StatelessWidget {
             width: selected ? 2 : 1,
           ),
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title, style: AppTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text(desc, style: AppTheme.bodyMedium),
+            Expanded(flex: 3, child: _buildPreview()),
+            Container(height: 1, color: selected ? AppTheme.primary.withOpacity(0.5) : AppTheme.border),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(title, style: AppTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(desc, style: AppTheme.bodySmall),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
