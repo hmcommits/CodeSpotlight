@@ -69,11 +69,11 @@ class GridTemplate extends StatelessWidget {
                       Column(
                         children: [
                           if (user.socialLinks.containsKey('github'))
-                            IconButton(icon: const Icon(LucideIcons.github, color: AppTheme.textPrimary), onPressed: () {}),
+                            IconButton(icon: Icon(LucideIcons.github, color: AppTheme.textPrimary), onPressed: () {}),
                           if (user.socialLinks.containsKey('linkedin'))
-                            IconButton(icon: const Icon(LucideIcons.linkedin, color: AppTheme.secondary), onPressed: () {}),
+                            IconButton(icon: Icon(LucideIcons.linkedin, color: AppTheme.secondary), onPressed: () {}),
                           if (user.socialLinks.containsKey('twitter'))
-                            IconButton(icon: const Icon(LucideIcons.twitter, color: AppTheme.primary), onPressed: () {}),
+                            IconButton(icon: Icon(LucideIcons.twitter, color: AppTheme.primary), onPressed: () {}),
                         ],
                       )
                     ],

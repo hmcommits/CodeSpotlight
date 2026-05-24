@@ -86,7 +86,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(LucideIcons.shieldAlert, size: 64, color: AppTheme.textMuted),
+              Icon(LucideIcons.shieldAlert, size: 64, color: AppTheme.textMuted),
               const SizedBox(height: 24),
               Text(
                 '404 / Private',

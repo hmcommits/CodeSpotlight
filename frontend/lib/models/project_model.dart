@@ -131,6 +131,8 @@ class Project {
     String? mermaidDiagram,
     DateTime? lastHeartbeatCheck,
     String? userId,
+    bool? featured,
+    bool? isPublicOnPortfolio,
   }) {
     return Project(
       id: id,
@@ -153,9 +155,9 @@ class Project {
       lastHeartbeatCheck: lastHeartbeatCheck ?? this.lastHeartbeatCheck,
       createdAt: createdAt,
       userId: userId ?? this.userId,
-      featured: featured,
+      featured: featured ?? this.featured,
       displayOrder: displayOrder,
-      isPublicOnPortfolio: isPublicOnPortfolio,
+      isPublicOnPortfolio: isPublicOnPortfolio ?? this.isPublicOnPortfolio,
       customDescription: customDescription,
     );
   }

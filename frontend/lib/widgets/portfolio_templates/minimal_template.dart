@@ -167,7 +167,7 @@ class _MinimalProjectCard extends StatelessWidget {
               ),
               const Spacer(),
               if (project.featured)
-                const Icon(LucideIcons.award, size: 16, color: Colors.orange),
+                Icon(LucideIcons.award, size: 16, color: Colors.orange),
             ],
           ),
           const SizedBox(height: 8),
@@ -182,7 +182,7 @@ class _MinimalProjectCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(project.primaryLanguage, style: GoogleFonts.inter(fontSize: 12, color: Colors.black54)),
               const SizedBox(width: 16),
-              const Icon(LucideIcons.star, size: 14, color: Colors.black54),
+              Icon(LucideIcons.star, size: 14, color: Colors.black54),
               const SizedBox(width: 4),
               Text(project.stars.toString(), style: GoogleFonts.inter(fontSize: 12, color: Colors.black54)),
             ],

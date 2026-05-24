@@ -52,7 +52,7 @@ class PortfolioProjectCard extends StatelessWidget {
               ),
               if (project.featured) ...[
                 const SizedBox(width: 8),
-                const Icon(LucideIcons.award, color: AppTheme.warning, size: 20),
+                Icon(LucideIcons.award, color: AppTheme.warning, size: 20),
               ],
               const SizedBox(width: 8),
               Container(
@@ -129,13 +129,13 @@ class PortfolioProjectCard extends StatelessWidget {
               const Spacer(),
               if (project.liveUrl.isNotEmpty)
                 IconButton(
-                  icon: const Icon(LucideIcons.externalLink, size: 20),
+                  icon: Icon(LucideIcons.externalLink, size: 20),
                   color: AppTheme.primary,
                   onPressed: () => _launchUrl(project.liveUrl),
                   tooltip: 'View Live App',
                 ),
               IconButton(
-                icon: const Icon(LucideIcons.github, size: 20),
+                icon: Icon(LucideIcons.github, size: 20),
                 color: AppTheme.textPrimary,
                 onPressed: () => _launchUrl('https://github.com/${project.fullName}'),
                 tooltip: 'View Source',
