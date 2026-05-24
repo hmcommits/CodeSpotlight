@@ -341,9 +341,7 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
         id: AuthService.instance.user?.id ?? 'live_preview',
         email: AuthService.instance.user?.email ?? '',
         name: AuthService.instance.user?.name ?? 'Your Name',
-        githubId: AuthService.instance.user?.githubId ?? '',
-        memberSince: AuthService.instance.user?.memberSince ?? DateTime.now(),
-        socialLinks: AuthService.instance.user?.socialLinks ?? [],
+        socialLinks: AuthService.instance.user?.socialLinks ?? {},
         bio: _bioController.text,
         avatarUrl: _avatarController.text,
         portfolioTemplate: _selectedTemplate,
@@ -388,7 +386,9 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
           ),
         ],
       );
-    });
+        },
+      ),
+    );
   }
 }
 
