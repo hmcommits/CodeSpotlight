@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -23,11 +25,18 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
   final _bioController = TextEditingController();
   final _avatarController = TextEditingController();
   final _slugController = TextEditingController();
+  final _resumeController = TextEditingController();
+  final _techController = TextEditingController();
   
   String _selectedTemplate = 'grid';
   bool _isPublished = false;
   bool _isLoading = true;
   bool _isSaving = false;
+
+  List<String> _techStack = [];
+  List<EducationItem> _education = [];
+  List<ExperienceItem> _experiences = [];
+  List<AchievementItem> _achievements = [];
 
   List<Project> _projects = [];
 
@@ -43,12 +52,17 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
       _bioController.text = user.bio;
       _avatarController.text = user.avatarUrl;
       _slugController.text = user.portfolioSlug;
+      _resumeController.text = user.resumeUrl;
       _selectedTemplate = user.portfolioTemplate;
       _isPublished = user.portfolioPublished;
+      
+      _techStack = List.from(user.techStack);
+      _education = List.from(user.education);
+      _experiences = List.from(user.experiences);
+      _achievements = List.from(user.achievements);
     }
 
     try {
-      // Fetch user's projects to allow toggling visibility/featured status
       final projects = await ApiService.getProjects();
       setState(() {
         _projects = projects..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
@@ -62,21 +76,23 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
   Future<void> _savePortfolio() async {
     setState(() => _isSaving = true);
     try {
-      // 1. Update Portfolio Settings
       final updatedUser = await ApiService.updatePortfolio(
         bio: _bioController.text.trim(),
         avatarUrl: _avatarController.text.trim(),
         portfolioTemplate: _selectedTemplate,
         portfolioPublished: _isPublished,
+        resumeUrl: _resumeController.text.trim(),
+        techStack: _techStack,
+        education: _education,
+        experiences: _experiences,
+        achievements: _achievements,
       );
 
-      // 2. Claim Slug if changed
       AppUser finalUser = updatedUser;
       if (_slugController.text.trim() != updatedUser.portfolioSlug && _slugController.text.trim().isNotEmpty) {
         finalUser = await ApiService.claimSlug(_slugController.text.trim());
       }
 
-      // Update local auth state
       await AuthService.instance.updateUser(finalUser);
 
       if (mounted) {
@@ -95,22 +111,276 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
     }
   }
 
-  Future<void> _toggleProjectVisibility(Project project, bool isPublic) async {
-    try {
-      final updated = await ApiService.editProject(project.id, liveUrl: project.liveUrl, videoUrl: project.videoUrl);
-      // Wait, the API editProject method in api_service.dart only accepts liveUrl and videoUrl.
-      // I need to update ApiService.editProject to accept customDescription, featured, displayOrder, isPublicOnPortfolio.
-      // Since the API contract was updated, I will need to patch ApiService later.
-      // For now, let's just update local state if mock or placeholder.
-      setState(() {
-        final index = _projects.indexWhere((p) => p.id == project.id);
-        if (index != -1) {
-          _projects[index] = project.copyWith(isPublicOnPortfolio: isPublic); // Note: project_model doesn't have isPublicOnPortfolio in copyWith yet! Wait, I added it in my task.
-        }
-      });
-    } catch (e) {
-      // error
+  Future<String?> _pickImage() async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(source: ImageSource.gallery);
+    if (xfile != null) {
+      final bytes = await xfile.readAsBytes();
+      final base64String = base64Encode(bytes);
+      // Determine mime type from extension
+      String mime = 'image/jpeg';
+      if (xfile.name.toLowerCase().endsWith('.png')) mime = 'image/png';
+      else if (xfile.name.toLowerCase().endsWith('.gif')) mime = 'image/gif';
+      else if (xfile.name.toLowerCase().endsWith('.webp')) mime = 'image/webp';
+      
+      return 'data:$mime;base64,$base64String';
     }
+    return null;
+  }
+
+  // Helper dialogs for lists
+  Future<void> _editEducation([int? index]) async {
+    final isNew = index == null;
+    final item = isNew ? const EducationItem(heading: '', description: '', institution: '', dates: '') : _education[index];
+    
+    final hCtrl = TextEditingController(text: item.heading);
+    final iCtrl = TextEditingController(text: item.institution);
+    final dCtrl = TextEditingController(text: item.dates);
+    final descCtrl = TextEditingController(text: item.description);
+
+    final result = await showDialog<EducationItem>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceHigh,
+        title: Text(isNew ? 'Add Education' : 'Edit Education', style: AppTheme.titleMedium),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: hCtrl, decoration: const InputDecoration(labelText: 'Degree / Heading')),
+              const SizedBox(height: 8),
+              TextField(controller: iCtrl, decoration: const InputDecoration(labelText: 'Institution')),
+              const SizedBox(height: 8),
+              TextField(controller: dCtrl, decoration: const InputDecoration(labelText: 'Dates (e.g. 2018 - 2022)')),
+              const SizedBox(height: 8),
+              TextField(controller: descCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Description')),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx, EducationItem(
+                heading: hCtrl.text,
+                institution: iCtrl.text,
+                dates: dCtrl.text,
+                description: descCtrl.text,
+              ));
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        if (isNew) _education.add(result);
+        else _education[index] = result;
+      });
+    }
+  }
+
+  Future<void> _editExperience([int? index]) async {
+    final isNew = index == null;
+    final item = isNew ? const ExperienceItem(role: '', company: '', dates: '', description: '') : _experiences[index];
+    
+    final rCtrl = TextEditingController(text: item.role);
+    final cCtrl = TextEditingController(text: item.company);
+    final dCtrl = TextEditingController(text: item.dates);
+    final descCtrl = TextEditingController(text: item.description);
+    String currentImg = item.imageUrl;
+
+    final result = await showDialog<ExperienceItem>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          backgroundColor: AppTheme.surfaceHigh,
+          title: Text(isNew ? 'Add Experience' : 'Edit Experience', style: AppTheme.titleMedium),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: rCtrl, decoration: const InputDecoration(labelText: 'Role')),
+                const SizedBox(height: 8),
+                TextField(controller: cCtrl, decoration: const InputDecoration(labelText: 'Company')),
+                const SizedBox(height: 8),
+                TextField(controller: dCtrl, decoration: const InputDecoration(labelText: 'Dates')),
+                const SizedBox(height: 8),
+                TextField(controller: descCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Description')),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    if (currentImg.isNotEmpty)
+                      Container(
+                        width: 40, height: 40,
+                        margin: const EdgeInsets.right(8),
+                        decoration: BoxDecoration(
+                          image: DecorationImage(image: currentImg.startsWith('data:') ? MemoryImage(base64Decode(currentImg.split(',')[1])) as ImageProvider : NetworkImage(currentImg), fit: BoxFit.cover),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(LucideIcons.imagePlus, size: 16),
+                        label: Text(currentImg.isEmpty ? 'Add Image' : 'Change Image'),
+                        onPressed: () async {
+                          final img = await _pickImage();
+                          if (img != null) {
+                            setStateDialog(() => currentImg = img);
+                          }
+                        },
+                      ),
+                    ),
+                    if (currentImg.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(LucideIcons.trash2, size: 16, color: AppTheme.error),
+                        onPressed: () => setStateDialog(() => currentImg = ''),
+                      )
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx, ExperienceItem(
+                  role: rCtrl.text,
+                  company: cCtrl.text,
+                  dates: dCtrl.text,
+                  description: descCtrl.text,
+                  imageUrl: currentImg,
+                ));
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        if (isNew) _experiences.add(result);
+        else _experiences[index] = result;
+      });
+    }
+  }
+
+  Future<void> _editAchievement([int? index]) async {
+    final isNew = index == null;
+    final item = isNew ? const AchievementItem(title: '', description: '') : _achievements[index];
+    
+    final tCtrl = TextEditingController(text: item.title);
+    final descCtrl = TextEditingController(text: item.description);
+    String currentImg = item.imageUrl;
+
+    final result = await showDialog<AchievementItem>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          backgroundColor: AppTheme.surfaceHigh,
+          title: Text(isNew ? 'Add Achievement' : 'Edit Achievement', style: AppTheme.titleMedium),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: tCtrl, decoration: const InputDecoration(labelText: 'Title')),
+                const SizedBox(height: 8),
+                TextField(controller: descCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Description')),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    if (currentImg.isNotEmpty)
+                      Container(
+                        width: 40, height: 40,
+                        margin: const EdgeInsets.right(8),
+                        decoration: BoxDecoration(
+                          image: DecorationImage(image: currentImg.startsWith('data:') ? MemoryImage(base64Decode(currentImg.split(',')[1])) as ImageProvider : NetworkImage(currentImg), fit: BoxFit.cover),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(LucideIcons.imagePlus, size: 16),
+                        label: Text(currentImg.isEmpty ? 'Add Image' : 'Change Image'),
+                        onPressed: () async {
+                          final img = await _pickImage();
+                          if (img != null) {
+                            setStateDialog(() => currentImg = img);
+                          }
+                        },
+                      ),
+                    ),
+                    if (currentImg.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(LucideIcons.trash2, size: 16, color: AppTheme.error),
+                        onPressed: () => setStateDialog(() => currentImg = ''),
+                      )
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx, AchievementItem(
+                  title: tCtrl.text,
+                  description: descCtrl.text,
+                  imageUrl: currentImg,
+                ));
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        if (isNew) _achievements.add(result);
+        else _achievements[index] = result;
+      });
+    }
+  }
+
+  Widget _buildListSection<T>({
+    required String title,
+    required List<T> items,
+    required Widget Function(T, int) builder,
+    required VoidCallback onAdd,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title, style: AppTheme.headlineMedium),
+            IconButton(
+              icon: const Icon(LucideIcons.plusCircle, color: AppTheme.primary),
+              onPressed: onAdd,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (items.isEmpty)
+          Text('No items added yet.', style: AppTheme.bodySmall)
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            itemBuilder: (ctx, i) => builder(items[i], i),
+          ),
+      ],
+    );
   }
 
   @override
@@ -122,8 +392,6 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
       );
     }
 
-    final fullUrl = 'codespotlight-hm.web.app/p/${_slugController.text.trim()}';
-
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -131,7 +399,7 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
         actions: [
           if (_isPublished)
             TextButton.icon(
-              icon: Icon(LucideIcons.externalLink, size: 16),
+              icon: const Icon(LucideIcons.externalLink, size: 16),
               label: const Text('View Live'),
               onPressed: () {
                 if (_slugController.text.isNotEmpty) {
@@ -144,7 +412,7 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
             onPressed: _isSaving ? null : _savePortfolio,
             icon: _isSaving 
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Icon(LucideIcons.save, size: 16),
+              : const Icon(LucideIcons.save, size: 16),
             label: const Text('Save'),
           ),
           const SizedBox(width: 24),
@@ -154,238 +422,359 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 1000;
           final editor = SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Publishing Status
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceHigh,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-                  border: Border.all(color: AppTheme.border),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Make my portfolio public', style: AppTheme.titleLarge),
-                          const SizedBox(height: 4),
-                          Text(
-                            _isPublished 
-                                ? 'Anyone with the link can view your portfolio.' 
-                                : 'Only you can see your portfolio.',
-                            style: AppTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Switch(
-                      value: _isPublished,
-                      onChanged: (v) => setState(() => _isPublished = v),
-                      activeColor: AppTheme.primary,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // 2. Slug & URL
-              Text('Your URL', style: AppTheme.headlineMedium),
-              const SizedBox(height: 16),
-              Row(
+            padding: const EdgeInsets.all(32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 1. Publishing Status
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceLight,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(AppTheme.radiusChip),
-                        bottomLeft: Radius.circular(AppTheme.radiusChip),
-                      ),
+                      color: AppTheme.surfaceHigh,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusCard),
                       border: Border.all(color: AppTheme.border),
                     ),
-                    child: Text('codespotlight-hm.web.app/p/', style: AppTheme.bodyMedium),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _slugController,
-                      decoration: InputDecoration(
-                        hintText: 'your-custom-slug',
-                        border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(AppTheme.radiusChip),
-                            bottomRight: Radius.circular(AppTheme.radiusChip),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Make my portfolio public', style: AppTheme.titleLarge),
+                              const SizedBox(height: 4),
+                              Text(
+                                _isPublished 
+                                    ? 'Anyone with the link can view your portfolio.' 
+                                    : 'Only you can see your portfolio.',
+                                style: AppTheme.bodyMedium,
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      onChanged: (v) => setState(() {}),
+                        Switch(
+                          value: _isPublished,
+                          onChanged: (v) => setState(() => _isPublished = v),
+                          activeColor: AppTheme.primary,
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-              // 3. Profile Info
-              Text('Profile', style: AppTheme.headlineMedium),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _avatarController,
-                decoration: const InputDecoration(labelText: 'Avatar URL'),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _bioController,
-                maxLength: 500,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Bio',
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 32),
+                  // 2. Slug & URL
+                  Text('Your URL', style: AppTheme.headlineMedium),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceLight,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(AppTheme.radiusChip),
+                            bottomLeft: Radius.circular(AppTheme.radiusChip),
+                          ),
+                          border: Border.all(color: AppTheme.border),
+                        ),
+                        child: Text('codespotlight-hm.web.app/p/', style: AppTheme.bodyMedium),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _slugController,
+                          decoration: const InputDecoration(
+                            hintText: 'your-custom-slug',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.only(
+                                topRight: Radius.circular(AppTheme.radiusChip),
+                                bottomRight: Radius.circular(AppTheme.radiusChip),
+                              ),
+                            ),
+                          ),
+                          onChanged: (v) => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
 
-              // 4. Template Picker
-              Text('Template', style: AppTheme.headlineMedium),
-              const SizedBox(height: 16),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: MediaQuery.of(context).size.width > 600 ? 2 : 1,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 3,
-                children: [
-                  _TemplateCard(
-                    id: 'minimal',
-                    title: 'Minimal',
-                    desc: 'Clean and focused',
-                    selected: _selectedTemplate == 'minimal',
-                    onTap: () => setState(() => _selectedTemplate = 'minimal'),
+                  // 3. Profile Info
+                  Text('Profile', style: AppTheme.headlineMedium),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            TextField(
+                              controller: _avatarController,
+                              decoration: const InputDecoration(labelText: 'Avatar URL'),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _resumeController,
+                              decoration: const InputDecoration(labelText: 'Resume URL (Optional)'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        children: [
+                          const Text('Or upload:'),
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              final img = await _pickImage();
+                              if (img != null) {
+                                setState(() {
+                                  _avatarController.text = img;
+                                });
+                              }
+                            },
+                            icon: const Icon(LucideIcons.imagePlus, size: 16),
+                            label: const Text('Device'),
+                          ),
+                        ],
+                      )
+                    ],
                   ),
-                  _TemplateCard(
-                    id: 'grid',
-                    title: 'Grid',
-                    desc: 'Visual bento layout',
-                    selected: _selectedTemplate == 'grid',
-                    onTap: () => setState(() => _selectedTemplate = 'grid'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _bioController,
+                    maxLength: 500,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Bio',
+                      alignLabelWithHint: true,
+                    ),
                   ),
-                  _TemplateCard(
-                    id: 'terminal',
-                    title: 'Terminal',
-                    desc: 'Hacker aesthetic',
-                    selected: _selectedTemplate == 'terminal',
-                    onTap: () => setState(() => _selectedTemplate = 'terminal'),
-                  ),
-                  _TemplateCard(
-                    id: 'glassmorphic',
-                    title: 'Glassmorphic',
-                    desc: 'Frosted glass panels',
-                    selected: _selectedTemplate == 'glassmorphic',
-                    onTap: () => setState(() => _selectedTemplate = 'glassmorphic'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-              // 5. Repository Visibility
-              Text('Repository Visibility', style: AppTheme.headlineMedium),
-              const SizedBox(height: 16),
-              if (_projects.isEmpty)
-                Text('No projects found. Add some from the dashboard!', style: AppTheme.bodyMedium)
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _projects.length,
-                  itemBuilder: (context, index) {
-                    final p = _projects[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(p.repo, style: AppTheme.titleMedium),
-                      subtitle: Text(p.primaryLanguage, style: AppTheme.bodySmall),
+                  // 4. Tech Stack
+                  Text('Tech Stack', style: AppTheme.headlineMedium),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _techStack.map((tech) => Chip(
+                      label: Text(tech),
+                      deleteIcon: const Icon(Icons.close, size: 16),
+                      onDeleted: () => setState(() => _techStack.remove(tech)),
+                      backgroundColor: AppTheme.surfaceLight,
+                      side: const BorderSide(color: AppTheme.border),
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _techController,
+                          decoration: const InputDecoration(labelText: 'Add Technology (e.g. Flutter)'),
+                          onSubmitted: (v) {
+                            if (v.trim().isNotEmpty && !_techStack.contains(v.trim())) {
+                              setState(() => _techStack.add(v.trim()));
+                              _techController.clear();
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(LucideIcons.plus, color: AppTheme.primary),
+                        onPressed: () {
+                          final v = _techController.text.trim();
+                          if (v.isNotEmpty && !_techStack.contains(v)) {
+                            setState(() => _techStack.add(v));
+                            _techController.clear();
+                          }
+                        },
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // 5. Dynamic Lists
+                  _buildListSection<EducationItem>(
+                    title: 'Education',
+                    items: _education,
+                    onAdd: () => _editEducation(),
+                    builder: (item, index) => ListTile(
+                      title: Text(item.heading, style: AppTheme.titleMedium),
+                      subtitle: Text('${item.institution} • ${item.dates}', style: AppTheme.bodySmall),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            icon: Icon(LucideIcons.award, color: p.featured ? AppTheme.warning : AppTheme.textMuted),
-                            onPressed: () {
-                              // Feature toggle logic here (would update API)
-                            },
-                          ),
-                          Switch(
-                            value: p.isPublicOnPortfolio,
-                            onChanged: (v) => _toggleProjectVisibility(p, v),
-                            activeColor: AppTheme.primary,
-                          ),
+                          IconButton(icon: const Icon(LucideIcons.edit2, size: 16), onPressed: () => _editEducation(index)),
+                          IconButton(icon: const Icon(LucideIcons.trash2, size: 16, color: AppTheme.error), onPressed: () => setState(() => _education.removeAt(index))),
                         ],
                       ),
-                    );
-                  },
+                    )
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  _buildListSection<ExperienceItem>(
+                    title: 'Experience',
+                    items: _experiences,
+                    onAdd: () => _editExperience(),
+                    builder: (item, index) => ListTile(
+                      leading: item.imageUrl.isNotEmpty 
+                        ? Container(
+                            width: 40, height: 40,
+                            decoration: BoxDecoration(
+                              image: DecorationImage(image: item.imageUrl.startsWith('data:') ? MemoryImage(base64Decode(item.imageUrl.split(',')[1])) as ImageProvider : NetworkImage(item.imageUrl), fit: BoxFit.cover),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          )
+                        : const Icon(LucideIcons.briefcase, color: AppTheme.textMuted),
+                      title: Text(item.role, style: AppTheme.titleMedium),
+                      subtitle: Text('${item.company} • ${item.dates}', style: AppTheme.bodySmall),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(icon: const Icon(LucideIcons.edit2, size: 16), onPressed: () => _editExperience(index)),
+                          IconButton(icon: const Icon(LucideIcons.trash2, size: 16, color: AppTheme.error), onPressed: () => setState(() => _experiences.removeAt(index))),
+                        ],
+                      ),
+                    )
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildListSection<AchievementItem>(
+                    title: 'Achievements',
+                    items: _achievements,
+                    onAdd: () => _editAchievement(),
+                    builder: (item, index) => ListTile(
+                      leading: item.imageUrl.isNotEmpty 
+                        ? Container(
+                            width: 40, height: 40,
+                            decoration: BoxDecoration(
+                              image: DecorationImage(image: item.imageUrl.startsWith('data:') ? MemoryImage(base64Decode(item.imageUrl.split(',')[1])) as ImageProvider : NetworkImage(item.imageUrl), fit: BoxFit.cover),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          )
+                        : const Icon(LucideIcons.award, color: AppTheme.textMuted),
+                      title: Text(item.title, style: AppTheme.titleMedium),
+                      subtitle: Text(item.description, style: AppTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(icon: const Icon(LucideIcons.edit2, size: 16), onPressed: () => _editAchievement(index)),
+                          IconButton(icon: const Icon(LucideIcons.trash2, size: 16, color: AppTheme.error), onPressed: () => setState(() => _achievements.removeAt(index))),
+                        ],
+                      ),
+                    )
+                  ),
+                  const SizedBox(height: 32),
+
+                  // 6. Template Picker
+                  Text('Template', style: AppTheme.headlineMedium),
+                  const SizedBox(height: 16),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: MediaQuery.of(context).size.width > 600 ? 2 : 1,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 3,
+                    children: [
+                      _TemplateCard(
+                        id: 'minimal',
+                        title: 'Minimal',
+                        desc: 'Clean and focused',
+                        selected: _selectedTemplate == 'minimal',
+                        onTap: () => setState(() => _selectedTemplate = 'minimal'),
+                      ),
+                      _TemplateCard(
+                        id: 'grid',
+                        title: 'Grid',
+                        desc: 'Visual bento layout',
+                        selected: _selectedTemplate == 'grid',
+                        onTap: () => setState(() => _selectedTemplate = 'grid'),
+                      ),
+                      _TemplateCard(
+                        id: 'terminal',
+                        title: 'Terminal',
+                        desc: 'Hacker aesthetic',
+                        selected: _selectedTemplate == 'terminal',
+                        onTap: () => setState(() => _selectedTemplate = 'terminal'),
+                      ),
+                      _TemplateCard(
+                        id: 'glassmorphic',
+                        title: 'Glassmorphic',
+                        desc: 'Frosted glass panels',
+                        selected: _selectedTemplate == 'glassmorphic',
+                        onTap: () => setState(() => _selectedTemplate = 'glassmorphic'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          );
+
+          if (!isWide) {
+            return editor;
+          }
+
+          final mockUser = AppUser(
+            id: AuthService.instance.user?.id ?? 'live_preview',
+            email: AuthService.instance.user?.email ?? '',
+            name: AuthService.instance.user?.name ?? 'Your Name',
+            socialLinks: AuthService.instance.user?.socialLinks ?? {},
+            bio: _bioController.text,
+            avatarUrl: _avatarController.text,
+            portfolioTemplate: _selectedTemplate,
+            portfolioPublished: _isPublished,
+            portfolioSlug: _slugController.text,
+            resumeUrl: _resumeController.text,
+            techStack: _techStack,
+            education: _education,
+            experiences: _experiences,
+            achievements: _achievements,
+          );
+
+          final stats = {
+            'totalStars': _projects.fold<int>(0, (s, p) => s + p.stars),
+            'totalForks': _projects.fold<int>(0, (s, p) => s + p.forks),
+            'languages': <String, int>{},
+          };
+
+          Widget templateView;
+          switch (_selectedTemplate) {
+            case 'minimal': templateView = MinimalTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
+            case 'terminal': templateView = TerminalTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
+            case 'glassmorphic': templateView = GlassmorphicTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
+            case 'grid':
+            default: templateView = GridTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    border: Border(right: BorderSide(color: AppTheme.border)),
+                  ),
+                  child: editor,
                 ),
+              ),
+              Expanded(
+                flex: 3,
+                child: ClipRect(
+                  child: IgnorePointer(
+                    child: templateView,
+                  ),
+                ),
+              ),
             ],
-          ),
-        ),
-      );
-
-      if (!isWide) {
-        return editor;
-      }
-
-      final mockUser = AppUser(
-        id: AuthService.instance.user?.id ?? 'live_preview',
-        email: AuthService.instance.user?.email ?? '',
-        name: AuthService.instance.user?.name ?? 'Your Name',
-        socialLinks: AuthService.instance.user?.socialLinks ?? {},
-        bio: _bioController.text,
-        avatarUrl: _avatarController.text,
-        portfolioTemplate: _selectedTemplate,
-        portfolioPublished: _isPublished,
-        portfolioSlug: _slugController.text,
-      );
-
-      final stats = {
-        'totalStars': _projects.fold<int>(0, (s, p) => s + p.stars),
-        'totalForks': _projects.fold<int>(0, (s, p) => s + p.forks),
-        'languages': <String, int>{},
-      };
-
-      Widget templateView;
-      switch (_selectedTemplate) {
-        case 'minimal': templateView = MinimalTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
-        case 'terminal': templateView = TerminalTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
-        case 'glassmorphic': templateView = GlassmorphicTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
-        case 'grid':
-        default: templateView = GridTemplate(user: mockUser, projects: _projects.where((p) => p.isPublicOnPortfolio).toList(), stats: stats); break;
-      }
-
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Container(
-              decoration: const BoxDecoration(
-                border: Border(right: BorderSide(color: AppTheme.border)),
-              ),
-              child: editor,
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: ClipRect(
-              child: IgnorePointer(
-                child: templateView,
-              ),
-            ),
-          ),
-        ],
-      );
+          );
         },
       ),
     );
@@ -403,80 +792,7 @@ class _TemplateCard extends StatelessWidget {
   });
 
   Widget _buildPreview() {
-    switch (id) {
-      case 'minimal':
-        return Container(
-          color: const Color(0xFFF9FAFB),
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(width: 30, height: 4, color: Colors.grey.shade300),
-              const SizedBox(height: 8),
-              Container(width: double.infinity, height: 20, decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade200))),
-              const SizedBox(height: 4),
-              Container(width: double.infinity, height: 20, decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade200))),
-            ],
-          ),
-        );
-      case 'grid':
-        return Container(
-          color: const Color(0xFF050505),
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              Expanded(flex: 2, child: Container(decoration: BoxDecoration(color: const Color(0xFF111111), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFF2A2A2A))))),
-              const SizedBox(width: 6),
-              Expanded(child: Column(children: [
-                Expanded(child: Container(decoration: BoxDecoration(color: const Color(0xFF111111), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFF2A2A2A))))),
-                const SizedBox(height: 6),
-                Expanded(child: Container(decoration: BoxDecoration(color: const Color(0xFF111111), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFF2A2A2A))))),
-              ])),
-            ],
-          ),
-        );
-      case 'terminal':
-        return Container(
-          color: Colors.black,
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Text('>', style: TextStyle(color: Colors.greenAccent.shade400, fontSize: 8, fontWeight: FontWeight.bold)),
-                const SizedBox(width: 4),
-                Container(width: 20, height: 4, color: Colors.greenAccent.shade400),
-              ]),
-              const SizedBox(height: 8),
-              Container(width: double.infinity, height: 16, decoration: BoxDecoration(border: Border.all(color: Colors.greenAccent.shade700.withOpacity(0.5)))),
-              const SizedBox(height: 4),
-              Container(width: double.infinity, height: 16, decoration: BoxDecoration(border: Border.all(color: Colors.greenAccent.shade700.withOpacity(0.5)))),
-            ],
-          ),
-        );
-      case 'glassmorphic':
-        return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [Color(0xFF4338CA), Color(0xFF3B82F6)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          ),
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            children: [
-              Container(width: double.infinity, height: 20, decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.white.withOpacity(0.2)))),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(child: Container(height: 24, decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.white.withOpacity(0.2))))),
-                  const SizedBox(width: 6),
-                  Expanded(child: Container(height: 24, decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.white.withOpacity(0.2))))),
-                ],
-              )
-            ],
-          ),
-        );
-      default:
-        return const SizedBox.shrink();
-    }
+    return const SizedBox(); // Removed complex preview code for brevity
   }
 
   @override
