@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/project_model.dart';
 import '../../models/user_model.dart';
+import '../tech_icon.dart';
 import '../../utils/icon_util.dart';
 
 class GlassmorphicTemplate extends StatelessWidget {
@@ -39,14 +40,15 @@ class GlassmorphicTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0F0C29),
       body: Stack(
         children: [
-          // Vibrant Animated Background
+          // Dark Vibrant Animated Background
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2), Color(0xFFF000FF)],
+                  colors: [Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -54,8 +56,8 @@ class GlassmorphicTemplate extends StatelessWidget {
             ),
           ),
           // Floating background orbs
-          Positioned(top: -100, left: -100, child: Container(width: 400, height: 400, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.blueAccent.withOpacity(0.5)), child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100), child: const SizedBox()))),
-          Positioned(bottom: -100, right: -100, child: Container(width: 500, height: 500, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.orangeAccent.withOpacity(0.5)), child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100), child: const SizedBox()))),
+          Positioned(top: -100, left: -100, child: Container(width: 400, height: 400, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.blueAccent.withOpacity(0.15)), child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100), child: const SizedBox()))),
+          Positioned(bottom: -100, right: -100, child: Container(width: 500, height: 500, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.purpleAccent.withOpacity(0.15)), child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100), child: const SizedBox()))),
           
           // Scrollable Content
           Center(
@@ -72,12 +74,12 @@ class GlassmorphicTemplate extends StatelessWidget {
                         if (user.avatarUrl.isNotEmpty)
                           Container(
                             width: 150, height: 150,
-                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.5), width: 3), image: DecorationImage(image: user.avatarUrl.startsWith('data:') ? MemoryImage(base64Decode(user.avatarUrl.split(',').last)) as ImageProvider : NetworkImage(user.avatarUrl), fit: BoxFit.cover)),
+                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.3), width: 3), image: DecorationImage(image: user.avatarUrl.startsWith('data:') ? MemoryImage(base64Decode(user.avatarUrl.split(',').last)) as ImageProvider : NetworkImage(user.avatarUrl), fit: BoxFit.cover)),
                           )
                         else
                           Container(
                             width: 150, height: 150,
-                            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1), border: Border.all(color: Colors.white.withOpacity(0.5), width: 3)),
+                            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.05), border: Border.all(color: Colors.white.withOpacity(0.3), width: 3)),
                             alignment: Alignment.center,
                             child: Text(user.initial, style: GoogleFonts.poppins(fontSize: 64, color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
@@ -85,7 +87,7 @@ class GlassmorphicTemplate extends StatelessWidget {
                         Text(user.name, style: GoogleFonts.poppins(fontSize: 56, fontWeight: FontWeight.bold, color: Colors.white, height: 1.1), textAlign: TextAlign.center),
                         const SizedBox(height: 16),
                         // 3. Bio
-                        Text(user.bio, style: GoogleFonts.poppins(fontSize: 20, color: Colors.white.withOpacity(0.9), height: 1.5), textAlign: TextAlign.center),
+                        Text(user.bio, style: GoogleFonts.poppins(fontSize: 20, color: Colors.white.withOpacity(0.8), height: 1.5), textAlign: TextAlign.center),
                         const SizedBox(height: 32),
                         
                         // 4. Social Links
@@ -98,8 +100,8 @@ class GlassmorphicTemplate extends StatelessWidget {
                                 onTap: () => _launch(e.value),
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1), border: Border.all(color: Colors.white.withOpacity(0.3))),
-                                  child: SvgPicture.network('https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(e.key)}/ffffff', width: 24, height: 24, placeholderBuilder: (_) => const Icon(LucideIcons.link, color: Colors.white)),
+                                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.05), border: Border.all(color: Colors.white.withOpacity(0.2))),
+                                  child: TechIcon(techName: e.key, size: 24, fallbackStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
                                 ),
                               ),
                             )).toList(),
@@ -113,14 +115,14 @@ class GlassmorphicTemplate extends StatelessWidget {
                           children: [
                             ElevatedButton(
                               onPressed: () => _launch('mailto:${user.email}'),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.purple, padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.9), foregroundColor: const Color(0xFF0F0C29), padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
                               child: Text('Contact Me', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
                             ),
                             if (user.resumeUrl.isNotEmpty) ...[
                               const SizedBox(width: 20),
                               OutlinedButton(
                                 onPressed: () => _launch(user.resumeUrl),
-                                style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white, width: 2), padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
+                                style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.5), width: 2), padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
                                 child: Text('Resume', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
                               ),
                             ]
@@ -131,7 +133,7 @@ class GlassmorphicTemplate extends StatelessWidget {
                   ),
                   const SizedBox(height: 48),
 
-                  // 6. Tech Stack
+                  // 6. Tech Stack (Floating Bubbles)
                   if (user.techStack.isNotEmpty) ...[
                     Text('Tech Stack', style: GoogleFonts.poppins(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
                     const SizedBox(height: 24),
@@ -140,11 +142,8 @@ class GlassmorphicTemplate extends StatelessWidget {
                         spacing: 24, runSpacing: 24, alignment: WrapAlignment.center,
                         children: user.techStack.map((tech) => Tooltip(
                           message: tech,
-                          child: Container(
-                            width: 80, height: 80,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.2))),
-                            child: SvgPicture.network('https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(tech)}/ffffff', placeholderBuilder: (_) => Center(child: Text(tech[0].toUpperCase(), style: GoogleFonts.poppins(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)))),
+                          child: _FloatingBubble(
+                            child: TechIcon(techName: tech, size: 40, fallbackStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
                         )).toList(),
                       ),
@@ -164,14 +163,14 @@ class GlassmorphicTemplate extends StatelessWidget {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
                               child: Text(e.dates, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(height: 16),
                             Text(e.heading, style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-                            Text(e.institution, style: GoogleFonts.poppins(fontSize: 18, color: Colors.white.withOpacity(0.8))),
+                            Text(e.institution, style: GoogleFonts.poppins(fontSize: 18, color: Colors.white.withOpacity(0.7))),
                             const SizedBox(height: 16),
-                            Text(e.description, style: GoogleFonts.poppins(fontSize: 16, color: Colors.white.withOpacity(0.9), height: 1.5)),
+                            Text(e.description, style: GoogleFonts.poppins(fontSize: 16, color: Colors.white.withOpacity(0.8), height: 1.5)),
                           ],
                         ),
                       ),
@@ -200,12 +199,12 @@ class GlassmorphicTemplate extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(e.dates, style: GoogleFonts.poppins(color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.w600)),
+                                  Text(e.dates, style: GoogleFonts.poppins(color: Colors.white.withOpacity(0.6), fontWeight: FontWeight.w600)),
                                   const SizedBox(height: 8),
                                   Text(e.role, style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-                                  Text(e.company, style: GoogleFonts.poppins(fontSize: 20, color: Colors.white.withOpacity(0.9))),
+                                  Text(e.company, style: GoogleFonts.poppins(fontSize: 20, color: Colors.white.withOpacity(0.8))),
                                   const SizedBox(height: 16),
-                                  Text(e.description, style: GoogleFonts.poppins(fontSize: 16, color: Colors.white.withOpacity(0.9), height: 1.5)),
+                                  Text(e.description, style: GoogleFonts.poppins(fontSize: 16, color: Colors.white.withOpacity(0.8), height: 1.5)),
                                 ],
                               ),
                             )
@@ -235,7 +234,7 @@ class GlassmorphicTemplate extends StatelessWidget {
                               if (a.imageUrl.isNotEmpty)
                                 Expanded(flex: 3, child: SizedBox(width: double.infinity, child: ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(24)), child: _buildImage(a.imageUrl))))
                               else
-                                Expanded(flex: 3, child: Container(decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: const BorderRadius.vertical(top: Radius.circular(24))), alignment: Alignment.center, child: const Icon(LucideIcons.award, size: 64, color: Colors.white))),
+                                Expanded(flex: 3, child: Container(decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: const BorderRadius.vertical(top: Radius.circular(24))), alignment: Alignment.center, child: const Icon(LucideIcons.award, size: 64, color: Colors.white))),
                               Expanded(
                                 flex: 2,
                                 child: Padding(
@@ -245,7 +244,7 @@ class GlassmorphicTemplate extends StatelessWidget {
                                     children: [
                                       Text(a.title, style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white), maxLines: 2, overflow: TextOverflow.ellipsis),
                                       const SizedBox(height: 8),
-                                      Text(a.description, style: GoogleFonts.poppins(fontSize: 14, color: Colors.white.withOpacity(0.8), height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
+                                      Text(a.description, style: GoogleFonts.poppins(fontSize: 14, color: Colors.white.withOpacity(0.7), height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
                                     ],
                                   ),
                                 ),
@@ -282,14 +281,68 @@ class _GlassContainer extends StatelessWidget {
           width: double.infinity,
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 30, spreadRadius: -5)],
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 30, spreadRadius: -5)],
           ),
           child: child,
         ),
       ),
+    );
+  }
+}
+
+class _FloatingBubble extends StatefulWidget {
+  final Widget child;
+  const _FloatingBubble({required this.child});
+
+  @override
+  State<_FloatingBubble> createState() => _FloatingBubbleState();
+}
+
+class _FloatingBubbleState extends State<_FloatingBubble> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final double _offset;
+  late final double _durationOffset;
+
+  @override
+  void initState() {
+    super.initState();
+    _offset = (math.Random().nextDouble() * 2 - 1) * 10;
+    _durationOffset = math.Random().nextDouble() * 1000;
+    _controller = AnimationController(vsync: this, duration: Duration(milliseconds: 2000 + _durationOffset.toInt()))
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (ctx, child) {
+        return Transform.translate(
+          offset: Offset(0, math.sin(_controller.value * math.pi) * _offset),
+          child: Container(
+            width: 80, height: 80,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.15)),
+              boxShadow: [
+                BoxShadow(color: Colors.white.withOpacity(0.05), blurRadius: 15, spreadRadius: 2)
+              ]
+            ),
+            child: widget.child,
+          ),
+        );
+      },
     );
   }
 }

@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/project_model.dart';
 import '../../models/user_model.dart';
-import '../../utils/icon_util.dart';
+import '../tech_icon.dart';
 
 class MinimalTemplate extends StatelessWidget {
   final AppUser user;
@@ -113,10 +112,11 @@ class MinimalTemplate extends StatelessWidget {
                           color: Colors.white,
                           border: Border.all(color: Colors.grey.shade200),
                         ),
-                        child: SvgPicture.network(
-                          'https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(e.key)}/333333',
-                          width: 24, height: 24,
-                          placeholderBuilder: (ctx) => const Icon(LucideIcons.link, color: Color(0xFF333333), size: 24),
+                        child: TechIcon(
+                          techName: e.key,
+                          size: 24,
+                          colorHex: '333333',
+                          fallbackStyle: GoogleFonts.inter(color: const Color(0xFF333333), fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -177,9 +177,11 @@ class MinimalTemplate extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
                       ),
-                      child: SvgPicture.network(
-                        'https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(tech)}',
-                        placeholderBuilder: (ctx) => Center(child: Text(tech[0].toUpperCase(), style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 24))),
+                      child: TechIcon(
+                        techName: tech,
+                        size: 32,
+                        colorHex: '333333',
+                        fallbackStyle: GoogleFonts.inter(color: const Color(0xFF333333), fontWeight: FontWeight.bold, fontSize: 10),
                       ),
                     ),
                   )).toList(),

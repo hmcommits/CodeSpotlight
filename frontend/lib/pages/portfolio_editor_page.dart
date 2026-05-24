@@ -14,6 +14,7 @@ import '../widgets/portfolio_templates/minimal_template.dart';
 import '../widgets/portfolio_templates/grid_template.dart';
 import '../widgets/portfolio_templates/terminal_template.dart';
 import '../widgets/portfolio_templates/glassmorphic_template.dart';
+import '../mock/portfolio_mock.dart';
 
 class PortfolioEditorPage extends StatefulWidget {
   const PortfolioEditorPage({super.key});
@@ -384,6 +385,48 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
     );
   }
 
+  void _showPreviewDemo() {
+    final mockData = PortfolioMock.getPortfolioMock();
+    final mockUser = mockData['user'] as AppUser;
+    final mockProjects = mockData['projects'] as List<Project>;
+    final mockStats = mockData['stats'] as Map<String, dynamic>;
+
+    Widget templateView;
+    switch (_selectedTemplate) {
+      case 'minimal': templateView = MinimalTemplate(user: mockUser, projects: mockProjects, stats: mockStats); break;
+      case 'terminal': templateView = TerminalTemplate(user: mockUser, projects: mockProjects, stats: mockStats); break;
+      case 'glassmorphic': templateView = GlassmorphicTemplate(user: mockUser, projects: mockProjects, stats: mockStats); break;
+      case 'grid':
+      default: templateView = GridTemplate(user: mockUser, projects: mockProjects, stats: mockStats); break;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: EdgeInsets.zero,
+        backgroundColor: Colors.transparent,
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+          child: Stack(
+            children: [
+              templateView,
+              Positioned(
+                top: 24,
+                right: 24,
+                child: FloatingActionButton(
+                  backgroundColor: AppTheme.surfaceHigh,
+                  child: const Icon(LucideIcons.x, color: Colors.white),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -408,6 +451,12 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
                 }
               },
             ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            icon: const Icon(LucideIcons.monitorPlay, size: 16),
+            label: const Text('Preview Demo'),
+            onPressed: _showPreviewDemo,
+          ),
           const SizedBox(width: 16),
           ElevatedButton.icon(
             onPressed: _isSaving ? null : _savePortfolio,
@@ -769,7 +818,8 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
               Expanded(
                 flex: 3,
                 child: ClipRect(
-                  child: IgnorePointer(
+                  child: AbsorbPointer(
+                    absorbing: false, // Allows scrolling the template!
                     child: templateView,
                   ),
                 ),

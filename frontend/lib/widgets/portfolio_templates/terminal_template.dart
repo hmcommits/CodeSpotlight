@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/project_model.dart';
 import '../../models/user_model.dart';
-import '../../utils/icon_util.dart';
+import '../tech_icon.dart';
 
 class TerminalTemplate extends StatelessWidget {
   final AppUser user;
@@ -114,7 +113,7 @@ class TerminalTemplate extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                SvgPicture.network('https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(e.key)}/00FF00', width: 20, height: 20, placeholderBuilder: (_) => const Icon(LucideIcons.link, color: Colors.greenAccent, size: 20)),
+                                TechIcon(techName: e.key, size: 20, colorHex: '00FF00', fallbackStyle: GoogleFonts.firaCode(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold)),
                                 const SizedBox(width: 8),
                                 Text('${e.key}.sh', style: GoogleFonts.firaCode(color: Colors.greenAccent)),
                               ],
@@ -155,7 +154,7 @@ class TerminalTemplate extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(border: Border.all(color: Colors.greenAccent.withOpacity(0.3))),
-                              child: SvgPicture.network('https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(tech)}/00FF00', width: 32, height: 32, placeholderBuilder: (_) => Text(tech[0].toUpperCase(), style: GoogleFonts.firaCode(fontSize: 24, color: Colors.greenAccent, fontWeight: FontWeight.bold))),
+                              child: TechIcon(techName: tech, size: 32, colorHex: '00FF00', fallbackStyle: GoogleFonts.firaCode(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                           )).toList(),
                         ),

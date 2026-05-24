@@ -4,7 +4,8 @@ class IconUtil {
     
     // Explicit overrides for common variations
     final overrides = {
-      'aws': 'amazonwebservices',
+      'aws': 'amazonaws',
+      'amazon web services': 'amazonaws',
       'gcp': 'googlecloud',
       'react native': 'react',
       'react js': 'react',
