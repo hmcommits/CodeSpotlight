@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -112,7 +113,7 @@ class TerminalTemplate extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Image.network('https://cdn.simpleicons.org/${e.key.toLowerCase()}/00FF00', width: 20, height: 20, errorBuilder: (_,__,___) => const Icon(LucideIcons.link, color: Colors.greenAccent, size: 20)),
+                                SvgPicture.network('https://cdn.simpleicons.org/${e.key.toLowerCase()}/00FF00', width: 20, height: 20, placeholderBuilder: (_) => const Icon(LucideIcons.link, color: Colors.greenAccent, size: 20)),
                                 const SizedBox(width: 8),
                                 Text('${e.key}.sh', style: GoogleFonts.firaCode(color: Colors.greenAccent)),
                               ],
@@ -153,7 +154,7 @@ class TerminalTemplate extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(border: Border.all(color: Colors.greenAccent.withOpacity(0.3))),
-                              child: Image.network('https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}/00FF00', width: 32, height: 32, errorBuilder: (_,__,___) => Text(tech[0].toUpperCase(), style: GoogleFonts.firaCode(fontSize: 24, color: Colors.greenAccent, fontWeight: FontWeight.bold))),
+                              child: SvgPicture.network('https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}/00FF00', width: 32, height: 32, placeholderBuilder: (_) => Text(tech[0].toUpperCase(), style: GoogleFonts.firaCode(fontSize: 24, color: Colors.greenAccent, fontWeight: FontWeight.bold))),
                             ),
                           )).toList(),
                         ),

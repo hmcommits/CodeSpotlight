@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -215,7 +216,7 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
                     if (currentImg.isNotEmpty)
                       Container(
                         width: 40, height: 40,
-                        margin: const EdgeInsets.right(8),
+                        margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
                           image: DecorationImage(image: currentImg.startsWith('data:') ? MemoryImage(base64Decode(currentImg.split(',')[1])) as ImageProvider : NetworkImage(currentImg), fit: BoxFit.cover),
                           borderRadius: BorderRadius.circular(4),
@@ -297,7 +298,7 @@ class _PortfolioEditorPageState extends State<PortfolioEditorPage> {
                     if (currentImg.isNotEmpty)
                       Container(
                         width: 40, height: 40,
-                        margin: const EdgeInsets.right(8),
+                        margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
                           image: DecorationImage(image: currentImg.startsWith('data:') ? MemoryImage(base64Decode(currentImg.split(',')[1])) as ImageProvider : NetworkImage(currentImg), fit: BoxFit.cover),
                           borderRadius: BorderRadius.circular(4),

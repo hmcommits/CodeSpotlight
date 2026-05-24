@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -97,7 +98,7 @@ class GlassmorphicTemplate extends StatelessWidget {
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1), border: Border.all(color: Colors.white.withOpacity(0.3))),
-                                  child: Image.network('https://cdn.simpleicons.org/${e.key.toLowerCase()}/ffffff', width: 24, height: 24, errorBuilder: (_,__,___) => const Icon(LucideIcons.link, color: Colors.white)),
+                                  child: SvgPicture.network('https://cdn.simpleicons.org/${e.key.toLowerCase()}/ffffff', width: 24, height: 24, placeholderBuilder: (_) => const Icon(LucideIcons.link, color: Colors.white)),
                                 ),
                               ),
                             )).toList(),
@@ -142,7 +143,7 @@ class GlassmorphicTemplate extends StatelessWidget {
                             width: 80, height: 80,
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.2))),
-                            child: Image.network('https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}/ffffff', errorBuilder: (_,__,___) => Center(child: Text(tech[0].toUpperCase(), style: GoogleFonts.poppins(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)))),
+                            child: SvgPicture.network('https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}/ffffff', placeholderBuilder: (_) => Center(child: Text(tech[0].toUpperCase(), style: GoogleFonts.poppins(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)))),
                           ),
                         )).toList(),
                       ),

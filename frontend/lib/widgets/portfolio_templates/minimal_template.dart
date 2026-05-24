@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -111,10 +112,10 @@ class MinimalTemplate extends StatelessWidget {
                           color: Colors.white,
                           border: Border.all(color: Colors.grey.shade200),
                         ),
-                        child: Image.network(
+                        child: SvgPicture.network(
                           'https://cdn.simpleicons.org/${e.key.toLowerCase()}/333333',
                           width: 24, height: 24,
-                          errorBuilder: (ctx, _, __) => const Icon(LucideIcons.link, color: Color(0xFF333333), size: 24),
+                          placeholderBuilder: (ctx) => const Icon(LucideIcons.link, color: Color(0xFF333333), size: 24),
                         ),
                       ),
                     ),
@@ -175,9 +176,9 @@ class MinimalTemplate extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
                       ),
-                      child: Image.network(
+                      child: SvgPicture.network(
                         'https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}',
-                        errorBuilder: (ctx, _, __) => Center(child: Text(tech[0].toUpperCase(), style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 24))),
+                        placeholderBuilder: (ctx) => Center(child: Text(tech[0].toUpperCase(), style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 24))),
                       ),
                     ),
                   )).toList(),

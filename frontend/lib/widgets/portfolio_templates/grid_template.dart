@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -106,7 +107,7 @@ class GridTemplate extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
-                              child: Image.network('https://cdn.simpleicons.org/${e.key.toLowerCase()}/white', width: 32, height: 32, errorBuilder: (_,__,___) => const Icon(LucideIcons.link, color: Colors.white, size: 32)),
+                              child: SvgPicture.network('https://cdn.simpleicons.org/${e.key.toLowerCase()}/white', width: 32, height: 32, placeholderBuilder: (_) => const Icon(LucideIcons.link, color: Colors.white, size: 32)),
                             ),
                           )).toList(),
                         )
@@ -130,7 +131,7 @@ class GridTemplate extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
-                              child: Image.network('https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}/white', width: 32, height: 32, errorBuilder: (_,__,___) => Text(tech[0].toUpperCase(), style: GoogleFonts.outfit(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold))),
+                              child: SvgPicture.network('https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}/white', width: 32, height: 32, placeholderBuilder: (_) => Text(tech[0].toUpperCase(), style: GoogleFonts.outfit(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold))),
                             ),
                           )).toList(),
                         )
