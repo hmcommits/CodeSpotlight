@@ -10,6 +10,11 @@ class AppUser {
   final String portfolioTemplate;
   final bool portfolioPublished;
   final String portfolioSlug;
+  final String resumeUrl;
+  final List<String> techStack;
+  final List<EducationItem> education;
+  final List<ExperienceItem> experiences;
+  final List<AchievementItem> achievements;
 
   const AppUser({
     required this.id,
@@ -21,6 +26,11 @@ class AppUser {
     this.portfolioTemplate = 'grid',
     this.portfolioPublished = false,
     this.portfolioSlug = '',
+    this.resumeUrl = '',
+    this.techStack = const [],
+    this.education = const [],
+    this.experiences = const [],
+    this.achievements = const [],
   });
 
   /// Parses a User object from the backend.
@@ -45,6 +55,11 @@ class AppUser {
       portfolioTemplate: json['portfolioTemplate'] as String? ?? 'grid',
       portfolioPublished: json['portfolioPublished'] as bool? ?? false,
       portfolioSlug: json['portfolioSlug'] as String? ?? '',
+      resumeUrl: json['resumeUrl'] as String? ?? '',
+      techStack: (json['techStack'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      education: (json['education'] as List<dynamic>?)?.map((e) => EducationItem.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      experiences: (json['experiences'] as List<dynamic>?)?.map((e) => ExperienceItem.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      achievements: (json['achievements'] as List<dynamic>?)?.map((e) => AchievementItem.fromJson(e as Map<String, dynamic>)).toList() ?? [],
     );
   }
 
@@ -58,6 +73,11 @@ class AppUser {
     'portfolioTemplate': portfolioTemplate,
     'portfolioPublished': portfolioPublished,
     'portfolioSlug': portfolioSlug,
+    'resumeUrl': resumeUrl,
+    'techStack': techStack,
+    'education': education.map((e) => e.toJson()).toList(),
+    'experiences': experiences.map((e) => e.toJson()).toList(),
+    'achievements': achievements.map((e) => e.toJson()).toList(),
   };
 
   String toJsonString() => jsonEncode(toJson());
@@ -69,4 +89,120 @@ class AppUser {
   String get initial => name.isNotEmpty
       ? name[0].toUpperCase()
       : email.isNotEmpty ? email[0].toUpperCase() : 'U';
+
+  AppUser copyWith({
+    String? name,
+    Map<String, String>? socialLinks,
+    String? bio,
+    String? avatarUrl,
+    String? portfolioTemplate,
+    bool? portfolioPublished,
+    String? portfolioSlug,
+    String? resumeUrl,
+    List<String>? techStack,
+    List<EducationItem>? education,
+    List<ExperienceItem>? experiences,
+    List<AchievementItem>? achievements,
+  }) {
+    return AppUser(
+      id: id,
+      email: email,
+      name: name ?? this.name,
+      socialLinks: socialLinks ?? this.socialLinks,
+      bio: bio ?? this.bio,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      portfolioTemplate: portfolioTemplate ?? this.portfolioTemplate,
+      portfolioPublished: portfolioPublished ?? this.portfolioPublished,
+      portfolioSlug: portfolioSlug ?? this.portfolioSlug,
+      resumeUrl: resumeUrl ?? this.resumeUrl,
+      techStack: techStack ?? this.techStack,
+      education: education ?? this.education,
+      experiences: experiences ?? this.experiences,
+      achievements: achievements ?? this.achievements,
+    );
+  }
+}
+
+class EducationItem {
+  final String heading;
+  final String description;
+  final String institution;
+  final String dates;
+
+  const EducationItem({
+    required this.heading,
+    required this.description,
+    required this.institution,
+    required this.dates,
+  });
+
+  factory EducationItem.fromJson(Map<String, dynamic> json) => EducationItem(
+    heading: json['heading']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+    institution: json['institution']?.toString() ?? '',
+    dates: json['dates']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'heading': heading,
+    'description': description,
+    'institution': institution,
+    'dates': dates,
+  };
+}
+
+class ExperienceItem {
+  final String role;
+  final String company;
+  final String dates;
+  final String description;
+  final String imageUrl;
+
+  const ExperienceItem({
+    required this.role,
+    required this.company,
+    required this.dates,
+    required this.description,
+    this.imageUrl = '',
+  });
+
+  factory ExperienceItem.fromJson(Map<String, dynamic> json) => ExperienceItem(
+    role: json['role']?.toString() ?? '',
+    company: json['company']?.toString() ?? '',
+    dates: json['dates']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+    imageUrl: json['imageUrl']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'role': role,
+    'company': company,
+    'dates': dates,
+    'description': description,
+    'imageUrl': imageUrl,
+  };
+}
+
+class AchievementItem {
+  final String title;
+  final String description;
+  final String imageUrl;
+
+  const AchievementItem({
+    required this.title,
+    required this.description,
+    this.imageUrl = '',
+  });
+
+  factory AchievementItem.fromJson(Map<String, dynamic> json) => AchievementItem(
+    title: json['title']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+    imageUrl: json['imageUrl']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'description': description,
+    'imageUrl': imageUrl,
+  };
 }

@@ -15,6 +15,49 @@ class PortfolioMock {
         portfolioTemplate: 'glassmorphic', // Change this to test different templates
         portfolioPublished: true,
         portfolioSlug: 'mockdev',
+        resumeUrl: 'https://example.com/resume.pdf',
+        techStack: ['Flutter', 'Dart', 'React', 'Node.js', 'MongoDB', 'Python'],
+        education: const [
+          EducationItem(
+            heading: 'B.Sc. in Computer Science',
+            description: 'Graduated with First Class Honors. Specialized in AI and Distributed Systems.',
+            institution: 'University of Technology',
+            dates: '2019 - 2023',
+          ),
+          EducationItem(
+            heading: 'High School Diploma',
+            description: 'Valedictorian. Captain of the Coding Club.',
+            institution: 'Tech High School',
+            dates: '2015 - 2019',
+          ),
+        ],
+        experiences: const [
+          ExperienceItem(
+            role: 'Senior Frontend Engineer',
+            company: 'TechCorp Inc.',
+            dates: 'Jan 2024 - Present',
+            description: 'Leading the development of a next-generation SaaS product using Flutter Web and React. Improved performance by 40% and mentored junior developers.',
+            imageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&q=80',
+          ),
+          ExperienceItem(
+            role: 'Full Stack Developer',
+            company: 'StartupX',
+            dates: 'Jun 2023 - Dec 2023',
+            description: 'Built a scalable backend with Node.js and MongoDB. Architected the main REST API and implemented secure JWT authentication.',
+            imageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&q=80',
+          ),
+        ],
+        achievements: const [
+          AchievementItem(
+            title: '1st Place Hackathon Winner',
+            description: 'Won the Global Tech Hackathon out of 500+ teams by building an AI-powered portfolio generator.',
+            imageUrl: 'https://images.unsplash.com/photo-1567168544813-cc03465b4fa8?w=400&q=80',
+          ),
+          AchievementItem(
+            title: 'AWS Certified Solutions Architect',
+            description: 'Certified to design distributed systems on AWS.',
+          ),
+        ],
         socialLinks: {
           'github': 'https://github.com',
           'linkedin': 'https://linkedin.com',
