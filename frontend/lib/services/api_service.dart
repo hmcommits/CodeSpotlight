@@ -231,12 +231,22 @@ class ApiService {
     String? avatarUrl,
     String? portfolioTemplate,
     bool? portfolioPublished,
+    String? resumeUrl,
+    List<String>? techStack,
+    List<EducationItem>? education,
+    List<ExperienceItem>? experiences,
+    List<AchievementItem>? achievements,
   }) async {
     final body = <String, dynamic>{};
     if (bio != null) body['bio'] = bio;
     if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
     if (portfolioTemplate != null) body['portfolioTemplate'] = portfolioTemplate;
     if (portfolioPublished != null) body['portfolioPublished'] = portfolioPublished;
+    if (resumeUrl != null) body['resumeUrl'] = resumeUrl;
+    if (techStack != null) body['techStack'] = techStack;
+    if (education != null) body['education'] = education.map((e) => e.toJson()).toList();
+    if (experiences != null) body['experiences'] = experiences.map((e) => e.toJson()).toList();
+    if (achievements != null) body['achievements'] = achievements.map((e) => e.toJson()).toList();
 
     final res = await http.patch(
       Uri.parse('$baseUrl/portfolio/me/portfolio'),
