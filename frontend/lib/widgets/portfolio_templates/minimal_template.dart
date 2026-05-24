@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/project_model.dart';
 import '../../models/user_model.dart';
+import '../../utils/icon_util.dart';
 
 class MinimalTemplate extends StatelessWidget {
   final AppUser user;
@@ -113,7 +114,7 @@ class MinimalTemplate extends StatelessWidget {
                           border: Border.all(color: Colors.grey.shade200),
                         ),
                         child: SvgPicture.network(
-                          'https://cdn.simpleicons.org/${e.key.toLowerCase()}/333333',
+                          'https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(e.key)}/333333',
                           width: 24, height: 24,
                           placeholderBuilder: (ctx) => const Icon(LucideIcons.link, color: Color(0xFF333333), size: 24),
                         ),
@@ -177,7 +178,7 @@ class MinimalTemplate extends StatelessWidget {
                         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
                       ),
                       child: SvgPicture.network(
-                        'https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}',
+                        'https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(tech)}',
                         placeholderBuilder: (ctx) => Center(child: Text(tech[0].toUpperCase(), style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 24))),
                       ),
                     ),

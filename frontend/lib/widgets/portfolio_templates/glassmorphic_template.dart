@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/project_model.dart';
 import '../../models/user_model.dart';
+import '../../utils/icon_util.dart';
 
 class GlassmorphicTemplate extends StatelessWidget {
   final AppUser user;
@@ -98,7 +99,7 @@ class GlassmorphicTemplate extends StatelessWidget {
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1), border: Border.all(color: Colors.white.withOpacity(0.3))),
-                                  child: SvgPicture.network('https://cdn.simpleicons.org/${e.key.toLowerCase()}/ffffff', width: 24, height: 24, placeholderBuilder: (_) => const Icon(LucideIcons.link, color: Colors.white)),
+                                  child: SvgPicture.network('https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(e.key)}/ffffff', width: 24, height: 24, placeholderBuilder: (_) => const Icon(LucideIcons.link, color: Colors.white)),
                                 ),
                               ),
                             )).toList(),
@@ -143,7 +144,7 @@ class GlassmorphicTemplate extends StatelessWidget {
                             width: 80, height: 80,
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.2))),
-                            child: SvgPicture.network('https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}/ffffff', placeholderBuilder: (_) => Center(child: Text(tech[0].toUpperCase(), style: GoogleFonts.poppins(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)))),
+                            child: SvgPicture.network('https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(tech)}/ffffff', placeholderBuilder: (_) => Center(child: Text(tech[0].toUpperCase(), style: GoogleFonts.poppins(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)))),
                           ),
                         )).toList(),
                       ),

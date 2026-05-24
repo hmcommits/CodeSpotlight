@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/project_model.dart';
 import '../../models/user_model.dart';
+import '../../utils/icon_util.dart';
 
 class GridTemplate extends StatelessWidget {
   final AppUser user;
@@ -107,7 +108,7 @@ class GridTemplate extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
-                              child: SvgPicture.network('https://cdn.simpleicons.org/${e.key.toLowerCase()}/white', width: 32, height: 32, placeholderBuilder: (_) => const Icon(LucideIcons.link, color: Colors.white, size: 32)),
+                              child: SvgPicture.network('https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(e.key)}/white', width: 32, height: 32, placeholderBuilder: (_) => const Icon(LucideIcons.link, color: Colors.white, size: 32)),
                             ),
                           )).toList(),
                         )
@@ -131,7 +132,7 @@ class GridTemplate extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
-                              child: SvgPicture.network('https://cdn.simpleicons.org/${tech.toLowerCase().replaceAll(' ', '')}/white', width: 32, height: 32, placeholderBuilder: (_) => Text(tech[0].toUpperCase(), style: GoogleFonts.outfit(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold))),
+                              child: SvgPicture.network('https://cdn.simpleicons.org/${IconUtil.getSimpleIconSlug(tech)}/white', width: 32, height: 32, placeholderBuilder: (_) => Text(tech[0].toUpperCase(), style: GoogleFonts.outfit(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold))),
                             ),
                           )).toList(),
                         )
